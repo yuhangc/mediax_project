@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="HRI_planner" type="human_localization" name="human_tracker">
+  	<param name="camera_info_file" value="$(find HRI_planner)/camera_calibration/kinect_rgb.yml"/>
+  </node>
+</launch>
