@@ -40,7 +40,7 @@ InsideOutTracker::InsideOutTracker()
     // initialize publishers and subscribers
     this->m_human_pose_pub = this->nh.advertise<geometry_msgs::Pose2D>("tracking/human_pos2d", 1);
     this->m_human_vel_pub = this->nh.advertise<geometry_msgs::Vector3>("tracking/human_vel2d", 1);
-    this->m_camera_rgb_sub = this->nh.subscribe<sensor_msgs::Image>("/camera/rgb/image_raw", 1,
+    this->m_camera_rgb_sub = this->nh.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
                                                                     &InsideOutTracker::camera_rgb_callback, this);
 
     // time interval for discretization
