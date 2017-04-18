@@ -14,7 +14,7 @@
 
 #include "Eigen/Dense"
 
-#define NUM_MARKER 3
+#include "json.hpp"
 
 class InsideOutTracker
 {
@@ -38,7 +38,7 @@ private:
     ros::Publisher m_human_vel_pub;
     ros::Publisher m_tracking_status_pub;
 
-    // Aruco marker detector
+    // aruco marker detector
     aruco::MarkerDetector m_detector;
     std::vector<aruco::Marker> m_markers;
 
@@ -76,9 +76,6 @@ private:
 
     // image from camera
     cv::Mat m_image_input;
-
-    // flags
-    bool m_flag_rgb_image_received;
 
     // callback functions
     void camera_rgb_callback(const sensor_msgs::ImageConstPtr& image_msg);
