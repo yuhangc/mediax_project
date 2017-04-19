@@ -6,18 +6,10 @@
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "human_localization");
-    InsideOutTracker human_tracker;
+    ros::NodeHandle nh;
+    ros::NodeHandle pnh("~");
 
-    ros::Rate loop_rate(10);
-    for (int i = 0; i < 50; i++) {
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
+    inside_out_tracker::InsideOutTracker human_tracker(nh, pnh);
 
-    while (!ros::isShuttingDown())
-    {
-        ros::spinOnce();
-        human_tracker.update();
-        loop_rate.sleep();
-    }
+    ros::spin();
 }

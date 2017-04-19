@@ -1,4 +1,5 @@
-#include <fstream>
+#include <unordered_map>
+#include <vector>
 
 #include "ros/ros.h"
 #include "cv_bridge/cv_bridge.h"
@@ -14,29 +15,35 @@
 
 #include "Eigen/Dense"
 
-#include "json.hpp"
+#define _USE_MATH_DEFINES
 
-class InsideOutTracker
-{
+namespace inside_out_tracker {
+
+inline double wrap_to_pi(double angle) {
+    while (angle < -M_PI) {
+        angle += 2.0 * M_PI;
+    }
+    while (angle > M_PI) {
+        angle -= 2.0 * M_PI;
+    }
+    return angle;
+}
+
+class InsideOutTracker {
 public:
     // constructor
-    InsideOutTracker();
+    InsideOutTracker(ros::NodeHandle &nh, ros::NodeHandle &pnh);
 
     // destructor
     ~InsideOutTracker();
 
-    // main update function
-    void update();
-
 private:
     // node handler
-    ros::NodeHandle nh;
+    ros::NodeHandle nh_;
 
     // subscriber and publisher
-    ros::Subscriber m_camera_rgb_sub;
+    ros::Subscriber m_camera_sub;
     ros::Publisher m_human_pose_pub;
-    ros::Publisher m_human_vel_pub;
-    ros::Publisher m_tracking_status_pub;
 
     // aruco marker detector
     aruco::MarkerDetector m_detector;
@@ -45,6 +52,9 @@ private:
     // orientation and position of the markers
     std::vector<Eigen::Matrix3d> m_marker_rot;
     std::vector<Eigen::Vector3d> m_marker_pos;
+
+    // marker map
+    std::unordered_map<int, geometry_msgs::Pose2D> map_markers;
 
     // detected body pose and velocity
     geometry_msgs::Pose2D m_body_pose;
@@ -58,25 +68,29 @@ private:
     // time interval for discretization
     double m_dt;
 
-    // tracking status
-    std_msgs::String m_tracking_status;
-
     // camera parameters
     aruco::CameraParameters m_cam_param;
 
     // marker size
     float m_marker_size;
 
-    // camera infos
-    int m_width;
-    int m_height;
-    float m_fov;
-    float m_fw;
-    float m_fh;
-
     // image from camera
     cv::Mat m_image_input;
 
+    // filter mode
+    std::string filter_mode;
+
     // callback functions
-    void camera_rgb_callback(const sensor_msgs::ImageConstPtr& image_msg);
+    void camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg);
+
+    // function to load map from .json file
+    void load_map(const std::string file_name);
+
+    // update functions
+    void detect_markers();
+    void process_update();
+    void measurement_update();
+    void simple_update();
 };
+
+} // namespace
