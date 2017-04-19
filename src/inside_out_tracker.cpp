@@ -147,13 +147,32 @@ namespace inside_out_tracker {
             angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
                           this->m_markers[i].Rvec.at<float>(1, 0),
                           this->m_markers[i].Rvec.at<float>(2, 0);
-            Eigen::Matrix3d rot_cam;
-            rot_cam = Eigen::AngleAxis(angle_axis.norm(), angle_axis.normalized());
+            Eigen::Matrix3f rot_cam;
+            rot_cam = Eigen::AngleAxisf(angle_axis.norm(), angle_axis.normalized());
 
             // obtain roll angle of the marker
-            double roll = std::atan2(rot_cam[1, 0], rot_cam[0, 0]);
+            double roll = std::atan2(rot_cam(1, 0), rot_cam(0, 0));
+            t_theta.push_back((float)roll);
 
+            pos += Eigen::Vector2f(this->m_markers[i].Tvec.at<float>(0, 0),
+                                   this->m_markers[i].Tvec.at<float>(1, 0));
+
+            std::cout << roll << " " << this->m_markers[i].Tvec.at<float>(0, 0)
+                      << " " << this->m_markers[i].Tvec.at<float>(1, 0) << std::endl;
         }
+
+        // calculate average position and orientation
+        float th, dth = 0.0;
+        for (int i = 1; i < t_theta.size(); i++) {
+            dth += wrap_to_pi(t_theta[i] - t_theta[0]);
+        }
+
+        pos /= t_theta.size();
+        th = wrap_to_pi(t_theta[0] + dth / t_theta.size());
+
+        this->m_body_pose.x = pos[0];
+        this->m_body_pose.y = pos[1];
+        this->m_body_pose.theta = th;
 
         // publish the tracking data
         this->m_human_pose_pub.publish(this->m_body_pose);
