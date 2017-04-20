@@ -133,7 +133,11 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-    void InsideOutTracker::process_update() {
+    void InsideOutTracker::odom_process_update() {
+    }
+
+    // ============================================================================
+    void InsideOutTracker::imu_process_update() {
     }
 
     // ============================================================================
@@ -215,6 +219,16 @@ namespace inside_out_tracker {
             // perform measurement update
             this->measurement_update();
         }
+    }
+
+    // ============================================================================
+    void InsideOutTracker::imu_callback(const std_msgs::Float32MultiArrayConstPtr imu_msg) {
+
+    }
+
+    // ============================================================================
+    void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr odom_msg) {
+        
     }
 
 } // namespace

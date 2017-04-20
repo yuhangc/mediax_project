@@ -9,6 +9,8 @@
 #include "sensor_msgs/Image.h"
 #include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Float32MultiArray.h"
+#include "nav_msgs/Odometry.h"
 
 #include "aruco/aruco.h"
 #include "aruco/cvdrawingutils.h"
@@ -43,6 +45,8 @@ private:
 
     // subscriber and publisher
     ros::Subscriber m_camera_sub;
+    ros::Subscriber m_imu_sub;
+    ros::Subscriber m_odom_sub;
     ros::Publisher m_human_pose_pub;
 
     // aruco marker detector
@@ -51,6 +55,7 @@ private:
 
     // camera to world rotation transformation
     Eigen::Matrix3f m_rot_cam_to_world;
+    Eigen::Matrix3f m_rot_imu_to_world;
 
     // orientation and position of the markers
     std::vector<Eigen::Matrix3d> m_marker_rot;
@@ -80,18 +85,22 @@ private:
     // image from camera
     cv::Mat m_image_input;
 
-    // filter mode
+    // parameters for filter settings
     std::string filter_mode;
+    std::string odom_source;
 
     // callback functions
     void camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg);
+    void imu_callback(const std_msgs::Float32MultiArrayConstPtr imu_msg);
+    void odom_callback(const nav_msgs::OdometryConstPtr odom_msg);
 
     // function to load map from .json file
     void load_map(const std::string file_name);
 
     // update functions
     void detect_markers();
-    void process_update();
+    void odom_process_update();
+    void imu_process_update();
     void measurement_update();
     void simple_update();
 };
