@@ -228,7 +228,7 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr odom_msg) {
-        
+
     }
 
 } // namespace

@@ -114,6 +114,7 @@ include_directories(${JSON_INCLUDE_DIR})
 ## Your package locations should be listed before other locations
 include_directories(
     include/HRI_planner
+    external/Arduino
     ${catkin_INCLUDE_DIRS}
 )
 
@@ -122,13 +123,28 @@ link_directories(${aruco_LIB_DIR})
 # set source, header for the aruco vision tracking node
 set(HUMAN_LOCALIZATION_SOURCES
     src/inside_out_tracker.cpp
-    src/human_localization.cpp
+    src/nodes/human_localization.cpp
 )
 
 set(HUMAN_LOCALIZATION_HEADERS
     include/HRI_planner/inside_out_tracker.h
 )
 
+# set source, header for the imu manager
+set(IMU_MANAGER_SOURCES
+    src/imu_manager.cpp
+    src/nodes/imu_manager_node.cpp
+    external/Arduino/CArduinoDevice.cpp
+)
+
+set(IMU_MANAGER_HEADERS
+    include/HRI_planner/imu_manager.h
+    external/Arduino/CArduinoDevice.h
+)
+
 ## Declare C++ executables
 add_executable(human_localization ${HUMAN_LOCALIZATION_SOURCES} ${HUMAN_LOCALIZATION_HEADERS})
 target_link_libraries(human_localization ${catkin_LIBRARIES} ${aruco_LIBS} ${OpenCV_LIBRARIES})
+
+add_executable(imu_manager_node ${IMU_MANAGER_SOURCES} ${IMU_MANAGER_HEADERS})
+target_link_libraries(imu_manager_node ${catkin_LIBRARIES})
