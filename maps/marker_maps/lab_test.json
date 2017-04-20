@@ -3,31 +3,31 @@
   "marker0": {
     "id": 101,
     "x": 0.0, "y": 180.0,
-    "theta": -90.0,
+    "theta": 0.0,
     "units": ["inch", "deg"]
   },
   "marker1": {
     "id": 102,
     "x": -36.125, "y": 180.0,
-    "theta": -90.0,
+    "theta": 0.0,
     "units": ["inch", "deg"]
   },
   "marker2": {
     "id": 115,
     "x": 24.625, "y": 180.0,
-    "theta": -90.0,
+    "theta": 0.0,
     "units": ["inch", "deg"]
   },
   "marker3": {
     "id": 108,
     "x": 50.625, "y": 156.0,
-    "theta": -180.0,
+    "theta": -90.0,
     "units": ["inch", "deg"]
   },
   "marker4": {
     "id": 113,
     "x": 50.625, "y": 119.75,
-    "theta": -180.0,
+    "theta": -90.0,
     "units": ["inch", "deg"]
   }
 }

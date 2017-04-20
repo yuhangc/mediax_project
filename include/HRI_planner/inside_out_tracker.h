@@ -19,7 +19,7 @@
 
 namespace inside_out_tracker {
 
-inline double wrap_to_pi(double angle) {
+inline float wrap_to_pi(float angle) {
     while (angle < -M_PI) {
         angle += 2.0 * M_PI;
     }
@@ -48,6 +48,9 @@ private:
     // aruco marker detector
     aruco::MarkerDetector m_detector;
     std::vector<aruco::Marker> m_markers;
+
+    // camera to world rotation transformation
+    Eigen::Matrix3f m_rot_cam_to_world;
 
     // orientation and position of the markers
     std::vector<Eigen::Matrix3d> m_marker_rot;

@@ -31,7 +31,7 @@ namespace inside_out_tracker {
 
         ros::param::param<std::string>("~filter_mode", this->filter_mode, "low_pass");
 
-        ros::param::param<float>("~marker_size", this->m_marker_size, 0.19);
+        ros::param::param<float>("~marker_size", this->m_marker_size, 0.204);
         ros::param::param<float>("~velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
 
         // initialize aruco trackers
@@ -42,11 +42,16 @@ namespace inside_out_tracker {
         // get camera info
         this->m_cam_param.readFromXMLFile(camera_info_file);
 
+        // set camera to world rotation transformation
+        this->m_rot_cam_to_world << 1.0, 0.0, 0.0,
+                                    0.0, 0.0, 1.0,
+                                    0.0, -1., 0.0;
+
         // load map from data file
         this->load_map(map_file);
 
         // initialize publishers and subscribers
-        this->m_human_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("tracking/human_pos2d", 1);
+        this->m_human_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("tracking/pose2d", 1);
         this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
                                                                      &InsideOutTracker::camera_rgb_callback, this);
 
@@ -112,14 +117,14 @@ namespace inside_out_tracker {
         for (int i = 0; i < this->m_markers.size(); i++) {
             this->m_markers[i].draw(t_output_image, cv::Scalar(0, 0, 255), 1);
         }
-
-        // draw cubes on the marker
-        if (this->m_cam_param.isValid() && this->m_marker_size > 0) {
-            for (int i = 0; i < this->m_markers.size(); i++) {
-                aruco::CvDrawingUtils::draw3dCube(t_output_image, this->m_markers[i], this->m_cam_param);
-                aruco::CvDrawingUtils::draw3dAxis(t_output_image, this->m_markers[i], this->m_cam_param);
-            }
-        }
+//
+//        // draw cubes on the marker
+//        if (this->m_cam_param.isValid() && this->m_marker_size > 0) {
+//            for (int i = 0; i < this->m_markers.size(); i++) {
+//                aruco::CvDrawingUtils::draw3dCube(t_output_image, this->m_markers[i], this->m_cam_param, true);
+//                aruco::CvDrawingUtils::draw3dAxis(t_output_image, this->m_markers[i], this->m_cam_param);
+//            }
+//        }
 
         // display the image
         cv::imshow("test", t_output_image);
@@ -138,27 +143,44 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::simple_update() {
+        // don't update if no markers detected
+        if (this->m_markers.size() == 0)
+            return;
+
         // extract marker poses
-        Eigen::Vector2f pos;
+        Eigen::Vector2f pos(0.0, 0.0);
         std::vector<float> t_theta;
 
         for (int i = 0; i < this->m_markers.size(); i++) {
+            // do nothing if the detected marker is not in the map
+            int id = this->m_markers[i].id;
+            if (this->map_markers.count(this->m_markers[i].id) == 0)
+                continue;
+
             Eigen::Vector3f angle_axis;
             angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
                           this->m_markers[i].Rvec.at<float>(1, 0),
                           this->m_markers[i].Rvec.at<float>(2, 0);
             Eigen::Matrix3f rot_cam;
             rot_cam = Eigen::AngleAxisf(angle_axis.norm(), angle_axis.normalized());
+            rot_cam = this->m_rot_cam_to_world * rot_cam;
 
-            // obtain roll angle of the marker
-            double roll = std::atan2(rot_cam(1, 0), rot_cam(0, 0));
-            t_theta.push_back((float)roll);
+            // obtain roll angle of the camera based on marker pose
+            double roll = this->map_markers[id].theta
+                          - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
+            t_theta.push_back(wrap_to_pi((float)roll));
 
-            pos += Eigen::Vector2f(this->m_markers[i].Tvec.at<float>(0, 0),
-                                   this->m_markers[i].Tvec.at<float>(1, 0));
+            // obtain position of the camera based on marker pose
+            Eigen::Matrix2f t_rot_cam;
+            t_rot_cam << std::cos(roll), -std::sin(roll),
+                         std::sin(roll), std::cos(roll);
+            Eigen::Vector2f t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
+            Eigen::Vector2f t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
+                                      this->m_markers[i].Tvec.at<float>(2, 0));
+            pos += t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
 
-            std::cout << roll << " " << this->m_markers[i].Tvec.at<float>(0, 0)
-                      << " " << this->m_markers[i].Tvec.at<float>(1, 0) << std::endl;
+//            std::cout << roll * 180 / M_PI << " (" << this->m_markers[i].Tvec.at<float>(0, 0)
+//                      << " " << this->m_markers[i].Tvec.at<float>(2, 0) << ")" << std::endl;
         }
 
         // calculate average position and orientation
@@ -176,6 +198,7 @@ namespace inside_out_tracker {
 
         // publish the tracking data
         this->m_human_pose_pub.publish(this->m_body_pose);
+//        std::cout << this->m_body_pose;
     }
 
     // ============================================================================

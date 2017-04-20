@@ -1,6 +1,13 @@
 <launch>
-  <node pkg="HRI_planner" type="human_localization" name="human_tracker">
+  <node pkg="HRI_planner" type="human_localization" name="human_tracker" output="screen">
   	<param name="camera_info_file" value="$(find HRI_planner)/camera_calibration/logitech_c310.yml"/>
+	<param name="map_file" value="$(find HRI_planner)/maps/marker_maps/lab_test.json"/>
+	<param name="marker_size" value="0.204"/>
 	<remap from="/inside_out_tracker/image" to="/usb_cam/image_raw"/>
+  </node>
+  <node pkg="HRI_planner" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">
+	<param name="map_file" value="$(find HRI_planner)/maps/marker_maps/lab_test.json"/>
+	<param name="marker_size" value="0.204"/>
+	<!--remap from="/inside_out_tracker/image" to="/usb_cam/image_raw"/-->
   </node>
 </launch>
