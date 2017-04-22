@@ -268,7 +268,7 @@ namespace inside_out_tracker {
         this->m_cov = Gt * this->m_cov * Gt.transpose();
         this->m_cov += Rt;
 
-//        std::cout << this->m_mu.transpose() << std::endl;
+        std::cout << this->m_mu.transpose() << std::endl;
 
         // publish the new predicted pose
         this->m_body_pose.x = this->m_mu[0];
@@ -294,7 +294,8 @@ namespace inside_out_tracker {
 
             // extract the measured orientation and position
             Eigen::Vector3d angle_axis;
-            double th_meas, x_meas, y_meas;
+            Eigen::Vector2d xy_meas;
+            double th_meas;
             angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
                     this->m_markers[i].Rvec.at<float>(1, 0),
                     this->m_markers[i].Rvec.at<float>(2, 0);
@@ -302,30 +303,32 @@ namespace inside_out_tracker {
             rot_marker = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
             rot_marker = this->m_rot_cam_to_world * rot_marker;
 
-            th_meas = std::atan2(rot_marker(1, 0), rot_marker(0, 0));
-            x_meas = this->m_markers[i].Tvec.at<float>(0, 0);
-            y_meas = this->m_markers[i].Tvec.at<float>(2, 0);
+            th_meas = this->map_markers[id].theta
+                      - std::atan2(rot_marker(1, 0), rot_marker(0, 0));
+
+            // obtain position of the camera based on marker pose
+            Eigen::Matrix2d t_rot_cam;
+            t_rot_cam << std::cos(th_meas), -std::sin(th_meas),
+                    std::sin(th_meas), std::cos(th_meas);
+            Eigen::Vector2d t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
+            Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
+                                             this->m_markers[i].Tvec.at<float>(2, 0));
+
+            xy_meas = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
 
             // obtain the predicted measurements
-            Eigen::Vector2d xy_pred(this->map_markers[id].x - this->m_mu[0],
-                                    this->map_markers[id].y - this->m_mu[1]);
-            double th_pred;
-
-            const double &th = this->m_mu[2];
-            Eigen::Matrix2d R_th;
-            R_th << std::cos(th), -std::sin(th), std::sin(th), std::cos(th);
-
-            xy_pred = R_th * xy_pred;
-            th_pred = this->map_markers[id].theta - th;
+            Eigen::Vector2d xy_pred(this->m_mu[0],
+                                    this->m_mu[1]);
+            double th_pred = this->m_mu[2];
 
 //            std::cout << xy_pred[0] << "  " << xy_pred[1] << "  " << th_pred << std::endl;
 
             // calculate measurement Jacobian
             Eigen::Matrix<double, 3, 5> Ht;
             Eigen::Matrix3d Qt;
-            Ht << -std::cos(th), -std::sin(th), y_meas, 0.0, 0.0,
-                  std::sin(th), -std::cos(th), -x_meas, 0.0, 0.0,
-                  0.0, 0.0, -1.0, 0.0, 0.0;
+            Ht << 1.0, 0.0, 0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0, 0.0, 0.0,
+                  0.0, 0.0, 1.0, 0.0, 0.0;
             Qt = this->m_cov_vision;
 
             // calculate Kalman gain
@@ -334,11 +337,11 @@ namespace inside_out_tracker {
             cov_meas = Ht * cov_prev * Ht.transpose(); cov_meas += Qt;
             Kt = cov_prev * Ht.transpose() * cov_meas.inverse();
 
-            std::cout << Kt << std::endl;
+//            std::cout << Kt << std::endl;
 
             // update mean and covariance
-            Eigen::Vector3d meas_diff(x_meas - xy_pred[0],
-                                    y_meas - xy_pred[1],
+            Eigen::Vector3d meas_diff(xy_meas[0] - xy_pred[0],
+                                    xy_meas[1] - xy_pred[1],
                                     wrap_to_pi(th_meas - th_pred));
 //            std::cout << mu_diff << std::endl;
             this->m_mu += Kt * meas_diff;
@@ -384,9 +387,6 @@ namespace inside_out_tracker {
             Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
                                       this->m_markers[i].Tvec.at<float>(2, 0));
             pos += t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
-
-//            std::cout << roll * 180 / M_PI << " (" << this->m_markers[i].Tvec.at<float>(0, 0)
-//                      << " " << this->m_markers[i].Tvec.at<float>(2, 0) << ")" << std::endl;
         }
 
         // calculate average position and orientation
@@ -398,22 +398,26 @@ namespace inside_out_tracker {
         pos /= t_theta.size();
         th = wrap_to_pi(t_theta[0] + dth / t_theta.size());
 
-        this->m_body_pose.x = pos[0];
-        this->m_body_pose.y = pos[1];
-        this->m_body_pose.theta = th;
-
         if (this->m_flag_reset_filter) {
-            Eigen::Vector3d t_pose(this->m_body_pose.x,
-                                   this->m_body_pose.y,
-                                   this->m_body_pose.theta);
+            Eigen::Vector3d t_pose(pos[0], pos[1], th);
             this->m_pose_reset.push_back(t_pose);
 
             if (this->m_pose_reset.size() >= this->m_num_sample_reset_max) {
                 this->reset_filter();
             }
+        } else {
+            // update body pose with low-pass filter
+            double alpha = 0.6, beta = 0.6, gamma = 0.25;
+            this->m_mu[0] = alpha * this->m_mu[0] + (1 - alpha) * pos[0];
+            this->m_mu[1] = beta * this->m_mu[1] + (1 - beta) * pos[1];
+            this->m_mu[2] = gamma * this->m_mu[2] + (1 - gamma) * th;
         }
 
         // publish the tracking data
+        this->m_body_pose.x = this->m_mu[0];
+        this->m_body_pose.y = this->m_mu[1];
+        this->m_body_pose.theta = this->m_mu[2];
+
         this->m_pose_pub.publish(this->m_body_pose);
 //        std::cout << this->m_body_pose;
     }

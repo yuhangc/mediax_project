@@ -1,5 +1,5 @@
 {
-  "num_markers": 5,
+  "num_markers": 9,
   "marker0": {
     "id": 101,
     "x": 0.0, "y": 180.0,
@@ -28,6 +28,30 @@
     "id": 113,
     "x": 50.625, "y": 119.75,
     "theta": -90.0,
+    "units": ["inch", "deg"]
+  },
+  "marker5": {
+    "id": 120,
+    "x": -18.0, "y": 180.0,
+    "theta": 0.0,
+    "units": ["inch", "deg"]
+  },
+  "marker6": {
+    "id": 121,
+    "x": 12.125, "y": 180.0,
+    "theta": 0.0,
+    "units": ["inch", "deg"]
+  },
+  "marker7": {
+    "id": 122,
+    "x": 0.0, "y": 180.0,
+    "theta": 0.0,
+    "units": ["inch", "deg"]
+  },
+  "marker8": {
+    "id": 123,
+    "x": -12.0, "y": 180.0,
+    "theta": 0.0,
     "units": ["inch", "deg"]
   }
 }
