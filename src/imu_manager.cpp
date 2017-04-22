@@ -8,7 +8,7 @@
 IMUManager::IMUManager(ros::NodeHandle &nh, ros::NodeHandle &pnh) : nh_(nh)
 {
     // initialize publisher
-    this->imu_data_pub = this->nh_.advertise<std_msgs::Float32MultiArray>("imu/data_raw", 1);
+    this->imu_data_pub = this->nh_.advertise<std_msgs::Float32MultiArray>("imu_data_raw", 1);
 
     // initialize the arduino device
     this->arduino = new CArduinoDevice("/dev/ttyACM0",CArduinoDevice::BAUD_115200);

@@ -22,17 +22,21 @@ namespace inside_out_tracker {
     InsideOutTracker::InsideOutTracker(ros::NodeHandle &nh, ros::NodeHandle &pnh) : nh_(nh) {
         std::string dict;
         std::string camera_info_file;
-        std::string map_file;
+        std::string map_file, filter_param_file;
 
         // get parameters
         ros::param::param<std::string>("~dictionary", dict, "ARUCO");
         ros::param::param<std::string>("~camera_info_file", camera_info_file, "camera_calibration.yml");
         ros::param::param<std::string>("~map_file", map_file, "map.json");
+        ros::param::param<std::string>("~filter_param_file", filter_param_file, "filter_param.json");
 
         ros::param::param<std::string>("~filter_mode", this->filter_mode, "low_pass");
+        ros::param::param<std::string>("~odom_source", this->odom_source, "imu");
+        ros::param::param<bool>("~use_accelerometer", this->m_flag_use_acc, false);
 
-        ros::param::param<float>("~marker_size", this->m_marker_size, 0.204);
-        ros::param::param<float>("~velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
+        ros::param::param<double>("~marker_size", this->m_marker_size, 0.204);
+        ros::param::param<int>("~num_sample_reset", this->m_num_sample_reset_max, 30);
+        ros::param::param<double>("~velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
 
         // initialize aruco trackers
         this->m_detector.setThresholdParams(7, 7);
@@ -50,17 +54,30 @@ namespace inside_out_tracker {
         // load map from data file
         this->load_map(map_file);
 
+        // load filter data
+        this->load_filter_param(filter_param_file);
+
         // initialize publishers and subscribers
-        this->m_human_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("tracking/pose2d", 1);
+        this->m_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("tracking/pose2d", 1);
         this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
                                                                      &InsideOutTracker::camera_rgb_callback, this);
+        this->m_imu_sub = this->nh_.subscribe<std_msgs::Float32MultiArray>("tracking/imu_data_raw", 1,
+                                                                    &InsideOutTracker::imu_callback, this);
+        this->m_odom_sub = this->nh_.subscribe<nav_msgs::Odometry>("tracking/odom", 1,
+                                                                   &InsideOutTracker::odom_callback, this);
+        this->m_reset_sub = this->nh_.subscribe<std_msgs::Bool>("tracking/reset", 1,
+                                                                &InsideOutTracker::reset_callback, this);
 
         // time interval for discretization
-        this->m_dt = 0.03333333333;
+        this->m_dt_process = 0.02;
 
         // initialize velocity and pose history
         this->m_body_pose_last = geometry_msgs::Pose2D();
         this->m_body_vel_last = geometry_msgs::Vector3();
+
+        this->m_flag_reset_filter = true;
+        this->m_mu.setZero(); this->m_mu[1] = 3;
+        this->m_cov.setZero();
     }
 
     // ============================================================================
@@ -69,7 +86,6 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-
     void InsideOutTracker::load_map(const std::string file_name) {
         std::ifstream map_stream(file_name);
         json j;
@@ -104,10 +120,70 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
+    void InsideOutTracker::load_filter_param(const std::string file_name) {
+        std::ifstream filter_param_stream(file_name);
+        json j;
+
+        filter_param_stream >> j;
+
+        for (int xx = 0; xx < 3; xx++) {
+            for (int yy = 0; yy < 3; yy++) {
+                int zz = xx * 3 + yy;
+                this->m_cov_acc(xx, yy) = j["acc_cov"][zz];
+                this->m_cov_gyro(xx, yy) = j["gyro_cov"][zz];
+                this->m_rot_imu_to_world(xx, yy) = j["imu_to_world_rot"][zz];
+            }
+        }
+
+        // FIXME temporarily set mu, cov
+        this->m_mu.setZero(); this->m_mu[1] = 3;
+        this->m_cov.setIdentity();
+
+        // rotate the covariance matrices
+        this->m_cov_acc = this->m_rot_imu_to_world * this->m_cov_acc * this->m_rot_imu_to_world.transpose();
+        this->m_cov_gyro = this->m_rot_imu_to_world * this->m_cov_gyro * this->m_rot_imu_to_world.transpose();
+
+        // multiply by the maximum magnitude
+        this->m_cov_acc *= 9.81 * 9.81;
+        this->m_cov_gyro *= 2.0 * 2.0;
+    }
+
+    // ============================================================================
+    void InsideOutTracker::reset_filter() {
+        Eigen::Vector3d avg_pose;
+        Eigen::Matrix3d avg_cov;
+        // reset mu to mean of the measurements
+        avg_pose.setZero();
+        for (auto pose = this->m_pose_reset.begin(); pose != this->m_pose_reset.end(); pose++) {
+            avg_pose += *pose;
+        }
+        avg_pose /= this->m_num_sample_reset_max;
+        this->m_mu.setZero();
+        this->m_mu.topLeftCorner(3, 1) = avg_pose;
+
+        // reset cov to covarance of the measurements
+        avg_cov.setZero();
+        for (auto pose = this->m_pose_reset.begin(); pose != this->m_pose_reset.end(); pose++) {
+            Eigen::Vector3d t_pose_diff = *pose - avg_pose;
+            avg_cov += t_pose_diff * t_pose_diff.transpose();
+        }
+        avg_cov /= this->m_num_sample_reset_max;
+        this->m_cov.setZero();
+        this->m_cov.topLeftCorner(3, 3) = avg_cov;
+
+        // FIXME: set the vision covariance to be this
+        this->m_cov_vision = avg_cov;
+        std::cout << this->m_cov_vision << std::endl;
+
+        // set the reset flag to false
+        this->m_flag_reset_filter = false;
+    }
+
+    // ============================================================================
     void InsideOutTracker::detect_markers() {
         // detect the markers
         this->m_markers = this->m_detector.detect(this->m_image_input, this->m_cam_param,
-                                                  this->m_marker_size, true);
+                                                  (float)this->m_marker_size, true);
 
 #ifdef DEBUG_DRAW_MARKER
         // draw marker boundaries
@@ -137,12 +213,138 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-    void InsideOutTracker::imu_process_update() {
+    void InsideOutTracker::imu_process_update(Eigen::Vector3d acc_meas, Eigen::Vector3d gyro_meas) {
+        // FIXME: simplest case for now, assuming imu only moves in x-y plane
+        // FIXME: also assume fixed update rate
+        // first rotate the measurements
+        acc_meas = this->m_rot_imu_to_world * acc_meas;
+        gyro_meas = this->m_rot_imu_to_world * gyro_meas;
+
+        const double &th = this->m_mu[2];
+        const double &dt = this->m_dt_process;
+        Eigen::Matrix2d R_th;
+        R_th << std::cos(th), -std::sin(th), std::sin(th), std::cos(th);
+
+        double acc_x = acc_meas[0] * std::cos(th) - acc_meas[1] * std::sin(th);
+        double acc_y = acc_meas[0] * std::sin(th) + acc_meas[1] * std::cos(th);
+
+        Vector5d mu_diff;
+        Matrix5d Gt, Rt;
+        if (this->m_flag_use_acc) {
+            mu_diff << this->m_mu[3] * dt + 0.5 * acc_x * dt * dt,
+                    this->m_mu[4] * dt + 0.5 * acc_y * dt * dt,
+                    gyro_meas[2] * dt,
+                    acc_x * dt,
+                    acc_y * dt;
+            Gt << 1.0, 0.0, - 0.5 * acc_y * dt * dt, dt, 0,
+                    0.0, 1.0, 0.5 * acc_x * dt * dt, 0, dt,
+                    0.0, 0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 1.0;
+        } else {
+            mu_diff << this->m_mu[3] * dt,
+                    this->m_mu[4] * dt,
+                    gyro_meas[2] * dt,
+                    0.0,
+                    0.0;
+            Gt << 1.0, 0.0, 0.0, dt, 0,
+                    0.0, 1.0, 0.0, 0, dt,
+                    0.0, 0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 1.0;
+        }
+
+        Rt.setZero();
+        Eigen::Matrix2d cov_acc_rotated = R_th * this->m_cov_acc.topLeftCorner(2, 2) * R_th.transpose();
+
+//        Rt.topLeftCorner(2, 2) = cov_acc_rotated * std::pow(dt, 4) / 4.0;
+        Rt.topLeftCorner(2, 2) = this->m_cov_acc.topLeftCorner(2, 2) * std::pow(dt, 4) / 4.0;
+        Rt(2, 2) = this->m_cov_gyro(2, 2) * dt * dt;
+//        Rt.bottomRightCorner(2, 2) = cov_acc_rotated * dt * dt;
+        Rt.bottomRightCorner(2, 2) = this->m_cov_acc.topLeftCorner(2, 2) * dt * dt;
+
+        this->m_mu += mu_diff;
+        this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
+        this->m_cov = Gt * this->m_cov * Gt.transpose();
+        this->m_cov += Rt;
+
+//        std::cout << this->m_mu.transpose() << std::endl;
+
+        // publish the new predicted pose
+        this->m_body_pose.x = this->m_mu[0];
+        this->m_body_pose.y = this->m_mu[1];
+        this->m_body_pose.theta = this->m_mu[2];
+        this->m_pose_pub.publish(this->m_body_pose);
     }
 
     // ============================================================================
     // measurement update
     void InsideOutTracker::measurement_update() {
+        // don't update if no markers detected
+        const unsigned long n = this->m_markers.size();
+        if (n == 0)
+            return;
+
+        Matrix5d cov_prev = this->m_cov;
+        for (int i = 0; i < n; i++) {
+            // do nothing if the detected marker is not in the map
+            int id = this->m_markers[i].id;
+            if (this->map_markers.count(this->m_markers[i].id) == 0)
+                continue;
+
+            // extract the measured orientation and position
+            Eigen::Vector3d angle_axis;
+            double th_meas, x_meas, y_meas;
+            angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
+                    this->m_markers[i].Rvec.at<float>(1, 0),
+                    this->m_markers[i].Rvec.at<float>(2, 0);
+            Eigen::Matrix3d rot_marker;
+            rot_marker = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
+            rot_marker = this->m_rot_cam_to_world * rot_marker;
+
+            th_meas = std::atan2(rot_marker(1, 0), rot_marker(0, 0));
+            x_meas = this->m_markers[i].Tvec.at<float>(0, 0);
+            y_meas = this->m_markers[i].Tvec.at<float>(2, 0);
+
+            // obtain the predicted measurements
+            Eigen::Vector2d xy_pred(this->map_markers[id].x - this->m_mu[0],
+                                    this->map_markers[id].y - this->m_mu[1]);
+            double th_pred;
+
+            const double &th = this->m_mu[2];
+            Eigen::Matrix2d R_th;
+            R_th << std::cos(th), -std::sin(th), std::sin(th), std::cos(th);
+
+            xy_pred = R_th * xy_pred;
+            th_pred = this->map_markers[id].theta - th;
+
+//            std::cout << xy_pred[0] << "  " << xy_pred[1] << "  " << th_pred << std::endl;
+
+            // calculate measurement Jacobian
+            Eigen::Matrix<double, 3, 5> Ht;
+            Eigen::Matrix3d Qt;
+            Ht << -std::cos(th), -std::sin(th), y_meas, 0.0, 0.0,
+                  std::sin(th), -std::cos(th), -x_meas, 0.0, 0.0,
+                  0.0, 0.0, -1.0, 0.0, 0.0;
+            Qt = this->m_cov_vision;
+
+            // calculate Kalman gain
+            Eigen::Matrix3d cov_meas;
+            Eigen::Matrix<double, 5, 3> Kt;
+            cov_meas = Ht * cov_prev * Ht.transpose(); cov_meas += Qt;
+            Kt = cov_prev * Ht.transpose() * cov_meas.inverse();
+
+            std::cout << Kt << std::endl;
+
+            // update mean and covariance
+            Eigen::Vector3d meas_diff(x_meas - xy_pred[0],
+                                    y_meas - xy_pred[1],
+                                    wrap_to_pi(th_meas - th_pred));
+//            std::cout << mu_diff << std::endl;
+            this->m_mu += Kt * meas_diff;
+            this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
+            this->m_cov -= Kt * Ht * cov_prev;
+        }
     }
 
     // ============================================================================
@@ -152,8 +354,8 @@ namespace inside_out_tracker {
             return;
 
         // extract marker poses
-        Eigen::Vector2f pos(0.0, 0.0);
-        std::vector<float> t_theta;
+        Eigen::Vector2d pos(0.0, 0.0);
+        std::vector<double> t_theta;
 
         for (int i = 0; i < this->m_markers.size(); i++) {
             // do nothing if the detected marker is not in the map
@@ -161,25 +363,25 @@ namespace inside_out_tracker {
             if (this->map_markers.count(this->m_markers[i].id) == 0)
                 continue;
 
-            Eigen::Vector3f angle_axis;
+            Eigen::Vector3d angle_axis;
             angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
                           this->m_markers[i].Rvec.at<float>(1, 0),
                           this->m_markers[i].Rvec.at<float>(2, 0);
-            Eigen::Matrix3f rot_cam;
-            rot_cam = Eigen::AngleAxisf(angle_axis.norm(), angle_axis.normalized());
+            Eigen::Matrix3d rot_cam;
+            rot_cam = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
             rot_cam = this->m_rot_cam_to_world * rot_cam;
 
             // obtain roll angle of the camera based on marker pose
             double roll = this->map_markers[id].theta
                           - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
-            t_theta.push_back(wrap_to_pi((float)roll));
+            t_theta.push_back(wrap_to_pi(roll));
 
             // obtain position of the camera based on marker pose
-            Eigen::Matrix2f t_rot_cam;
+            Eigen::Matrix2d t_rot_cam;
             t_rot_cam << std::cos(roll), -std::sin(roll),
                          std::sin(roll), std::cos(roll);
-            Eigen::Vector2f t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
-            Eigen::Vector2f t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
+            Eigen::Vector2d t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
+            Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
                                       this->m_markers[i].Tvec.at<float>(2, 0));
             pos += t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
 
@@ -188,7 +390,7 @@ namespace inside_out_tracker {
         }
 
         // calculate average position and orientation
-        float th, dth = 0.0;
+        double th, dth = 0.0;
         for (int i = 1; i < t_theta.size(); i++) {
             dth += wrap_to_pi(t_theta[i] - t_theta[0]);
         }
@@ -200,8 +402,19 @@ namespace inside_out_tracker {
         this->m_body_pose.y = pos[1];
         this->m_body_pose.theta = th;
 
+        if (this->m_flag_reset_filter) {
+            Eigen::Vector3d t_pose(this->m_body_pose.x,
+                                   this->m_body_pose.y,
+                                   this->m_body_pose.theta);
+            this->m_pose_reset.push_back(t_pose);
+
+            if (this->m_pose_reset.size() >= this->m_num_sample_reset_max) {
+                this->reset_filter();
+            }
+        }
+
         // publish the tracking data
-        this->m_human_pose_pub.publish(this->m_body_pose);
+        this->m_pose_pub.publish(this->m_body_pose);
 //        std::cout << this->m_body_pose;
     }
 
@@ -212,7 +425,7 @@ namespace inside_out_tracker {
         // detect markers
         this->detect_markers();
 
-        if (this->filter_mode == "low_pass") {
+        if (this->filter_mode == "low_pass" || this->m_flag_reset_filter) {
             // perform simple position update
             this->simple_update();
         } else if (this->filter_mode == "kalman") {
@@ -222,13 +435,29 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-    void InsideOutTracker::imu_callback(const std_msgs::Float32MultiArrayConstPtr imu_msg) {
-
+    void InsideOutTracker::imu_callback(const std_msgs::Float32MultiArrayConstPtr &imu_msg) {
+        if (this->filter_mode == "kalman" && this->odom_source == "imu" && !this->m_flag_reset_filter) {
+            Eigen::Vector3d acc_meas, gyro_meas;
+            acc_meas << imu_msg->data[0], imu_msg->data[1], imu_msg->data[2];
+            gyro_meas << imu_msg->data[3], imu_msg->data[4], imu_msg->data[5];
+            acc_meas *= -9.81;
+            gyro_meas *= DEG2RAD;
+            this->imu_process_update(acc_meas, gyro_meas);
+        }
     }
 
     // ============================================================================
-    void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr odom_msg) {
+    void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
+        if (this->filter_mode == "kalman" && this->odom_source == "odom" && !this->m_flag_reset_filter)
+            this->odom_process_update();
+    }
 
+    // ============================================================================
+    void InsideOutTracker::reset_callback(const std_msgs::BoolConstPtr &reset_msg) {
+        if (reset_msg->data != 0) {
+            this->m_pose_reset.clear();
+            this->m_flag_reset_filter = true;
+        }
     }
 
 } // namespace
