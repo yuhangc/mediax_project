@@ -346,7 +346,7 @@ namespace inside_out_tracker {
 //            std::cout << mu_diff << std::endl;
             this->m_mu += Kt * meas_diff;
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
-            this->m_cov -= Kt * Ht * cov_prev;
+            this->m_cov -= Kt * Ht * this->m_cov;
         }
     }
 
