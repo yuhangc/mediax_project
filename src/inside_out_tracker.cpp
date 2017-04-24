@@ -173,7 +173,6 @@ namespace inside_out_tracker {
 
         // FIXME: set the vision covariance to be this
         this->m_cov_vision = avg_cov;
-        std::cout << this->m_cov_vision << std::endl;
 
         // set the reset flag to false
         this->m_flag_reset_filter = false;
@@ -257,18 +256,14 @@ namespace inside_out_tracker {
         Rt.setZero();
         Eigen::Matrix2d cov_acc_rotated = R_th * this->m_cov_acc.topLeftCorner(2, 2) * R_th.transpose();
 
-//        Rt.topLeftCorner(2, 2) = cov_acc_rotated * std::pow(dt, 4) / 4.0;
         Rt.topLeftCorner(2, 2) = this->m_cov_acc.topLeftCorner(2, 2) * std::pow(dt, 4) / 4.0;
         Rt(2, 2) = this->m_cov_gyro(2, 2) * dt * dt;
-//        Rt.bottomRightCorner(2, 2) = cov_acc_rotated * dt * dt;
         Rt.bottomRightCorner(2, 2) = this->m_cov_acc.topLeftCorner(2, 2) * dt * dt;
 
         this->m_mu += mu_diff;
         this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
         this->m_cov = Gt * this->m_cov * Gt.transpose();
         this->m_cov += Rt;
-
-        std::cout << this->m_mu.transpose() << std::endl;
 
         // publish the new predicted pose
         this->m_body_pose.x = this->m_mu[0];
