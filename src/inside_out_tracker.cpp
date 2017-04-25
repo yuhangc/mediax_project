@@ -25,18 +25,18 @@ namespace inside_out_tracker {
         std::string map_file, filter_param_file;
 
         // get parameters
-        ros::param::param<std::string>("~dictionary", dict, "ARUCO");
-        ros::param::param<std::string>("~camera_info_file", camera_info_file, "camera_calibration.yml");
-        ros::param::param<std::string>("~map_file", map_file, "map.json");
-        ros::param::param<std::string>("~filter_param_file", filter_param_file, "filter_param.json");
+        pnh.param<std::string>("dictionary", dict, "ARUCO");
+        pnh.param<std::string>("camera_info_file", camera_info_file, "camera_calibration.yml");
+        pnh.param<std::string>("map_file", map_file, "map.json");
+        pnh.param<std::string>("filter_param_file", filter_param_file, "filter_param.json");
 
-        ros::param::param<std::string>("~filter_mode", this->filter_mode, "low_pass");
-        ros::param::param<std::string>("~odom_source", this->odom_source, "imu");
-        ros::param::param<bool>("~use_accelerometer", this->m_flag_use_acc, false);
+        pnh.param<std::string>("filter_mode", this->filter_mode, "low_pass");
+        pnh.param<std::string>("odom_source", this->odom_source, "imu");
+        pnh.param<bool>("use_accelerometer", this->m_flag_use_acc, false);
 
-        ros::param::param<double>("~marker_size", this->m_marker_size, 0.204);
-        ros::param::param<int>("~num_sample_reset", this->m_num_sample_reset_max, 30);
-        ros::param::param<double>("~velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
+        pnh.param<double>("marker_size", this->m_marker_size, 0.204);
+        pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
+        pnh.param<double>("velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
 
         // initialize aruco trackers
         this->m_detector.setThresholdParams(7, 7);

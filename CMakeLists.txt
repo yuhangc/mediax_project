@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(HRI_planner)
+project(hri_planner)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
@@ -113,7 +113,7 @@ include_directories(${JSON_INCLUDE_DIR})
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-    include/HRI_planner
+    include/hri_planner
     external/Arduino
     ${catkin_INCLUDE_DIRS}
 )
@@ -121,13 +121,22 @@ include_directories(
 link_directories(${aruco_LIB_DIR})
 
 # set source, header for the aruco vision tracking node
-set(HUMAN_LOCALIZATION_SOURCES
+set(INSIDE_OUT_TRACKER_SOURCES
     src/inside_out_tracker.cpp
+)
+
+set(INSIDE_OUT_TRACKER_HEADERS
+    include/hri_planner/inside_out_tracker.h
+)
+
+# set source, header for the aruco vision tracking node
+set(HUMAN_LOCALIZATION_SOURCES
     src/nodes/human_localization.cpp
 )
 
-set(HUMAN_LOCALIZATION_HEADERS
-    include/HRI_planner/inside_out_tracker.h
+# set source, header for the aruco vision tracking node
+set(TRACKER_NODELET_SOURCES
+    src/nodelets/tracker_nodelet.cpp
 )
 
 # set source, header for the imu manager
@@ -138,13 +147,20 @@ set(IMU_MANAGER_SOURCES
 )
 
 set(IMU_MANAGER_HEADERS
-    include/HRI_planner/imu_manager.h
+    include/hri_planner/imu_manager.h
     external/Arduino/CArduinoDevice.h
 )
 
+## Declare C++ libraries
+add_library(inside_out_tracker ${INSIDE_OUT_TRACKER_SOURCES} ${INSIDE_OUT_TRACKER_HEADERS})
+target_link_libraries(inside_out_tracker ${catkin_LIBRARIES} ${aruco_LIBS} ${OpenCV_LIBRARIES})
+
+add_library(tracker_nodelet ${TRACKER_NODELET_SOURCES})
+target_link_libraries(tracker_nodelet ${catkin_LIBRARIES} inside_out_tracker)
+
 ## Declare C++ executables
-add_executable(human_localization ${HUMAN_LOCALIZATION_SOURCES} ${HUMAN_LOCALIZATION_HEADERS})
-target_link_libraries(human_localization ${catkin_LIBRARIES} ${aruco_LIBS} ${OpenCV_LIBRARIES})
+add_executable(human_localization ${HUMAN_LOCALIZATION_SOURCES})
+target_link_libraries(human_localization ${catkin_LIBRARIES} inside_out_tracker)
 
 add_executable(imu_manager_node ${IMU_MANAGER_SOURCES} ${IMU_MANAGER_HEADERS})
 target_link_libraries(imu_manager_node ${catkin_LIBRARIES})

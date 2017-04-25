@@ -1,17 +1,17 @@
 <launch>
-  <node pkg="hri_planner" type="human_localization" name="human_tracker" output="screen">
-  	<param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
+  <node pkg="nodelet" type="nodelet" name="standalone_nodelet"  args="manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet standalone_nodelet" output="screen">
+	<param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
 	<param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
 	<param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
 	<param name="marker_size" value="0.204"/>
 	<param name="filter_mode" value="low_pass"/>
 	<remap from="/inside_out_tracker/image" to="/usb_cam/image_raw"/>
   </node>
+
   <node pkg="hri_planner" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">
 	<param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
 	<param name="marker_size" value="0.204"/>
-  </node>
-  <node pkg="hri_planner" type="imu_manager_node" name="imu_manager" output="screen">
-	<remap from="/imu_data_raw" to="/tracking/imu_data_raw"/>
   </node>
 </launch>

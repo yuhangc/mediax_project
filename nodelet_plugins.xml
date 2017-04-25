@@ -1,0 +1,6 @@
+<library path="lib/libtracker_nodelet">
+  <class name="hri_planner/TrackerNodelet" type="inside_out_tracker::TrackerNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+    </description>
+  </class>
+</library>
