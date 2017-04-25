@@ -1,17 +1,32 @@
 <launch>
-  <node pkg="nodelet" type="nodelet" name="standalone_nodelet"  args="manager" output="screen"/>
+  <group ns="cam_tracker">
+	<node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" />
 
-  <node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet standalone_nodelet" output="screen">
-	<param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
-	<param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
-	<param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
-	<param name="marker_size" value="0.204"/>
-	<param name="filter_mode" value="low_pass"/>
-	<remap from="/inside_out_tracker/image" to="/usb_cam/image_raw"/>
-  </node>
+	<node pkg="nodelet" type="nodelet" name="camera_nodelet"
+          args="load usb_cam/UsbCamNodelet camera_nodelet_manager" >
+      <param name="video_device" value="/dev/video0" />
+      <param name="image_width" value="800" />
+      <param name="image_height" value="600" />
+      <param name="pixel_format" value="yuyv" />
+      <param name="camera_frame_id" value="usb_cam" />
+      <param name="io_method" value="mmap"/>
+      <!--param name="camera_info_url" if="$(arg calibrated)"
+             value="file://$(env HOME)/.ros/camera_info/$(arg camera_serial).yaml" /-->
+    </node>
 
-  <node pkg="hri_planner" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">
-	<param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
-	<param name="marker_size" value="0.204"/>
-  </node>
+	<node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet camera_nodelet_manager" output="screen">
+	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
+	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
+	  <param name="marker_size" value="0.204"/>
+	  <param name="filter_mode" value="low_pass"/>
+	  <remap from="/cam_tracker/inside_out_tracker/image" to="/cam_tracker/image_raw"/>
+    </node>
+
+	<node pkg="hri_planner" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
+	  <param name="marker_size" value="0.204"/>
+	  <remap from="/tracking/pose2d" to="/cam_tracker/tracking/pose2d"/>
+    </node>
+  </group>
 </launch>
