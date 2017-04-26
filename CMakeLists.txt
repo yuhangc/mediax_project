@@ -151,6 +151,15 @@ set(IMU_MANAGER_HEADERS
     external/Arduino/CArduinoDevice.h
 )
 
+# set source, header for the haptics driver
+set(HAPTICS_SOURCES
+    src/haptic_usb.cpp
+)
+
+set(HAPTICS_HEADERS
+    include/hri_planner/haptic_usb.h
+)
+
 ## Declare C++ libraries
 add_library(inside_out_tracker ${INSIDE_OUT_TRACKER_SOURCES} ${INSIDE_OUT_TRACKER_HEADERS})
 target_link_libraries(inside_out_tracker ${catkin_LIBRARIES} ${aruco_LIBS} ${OpenCV_LIBRARIES})
@@ -164,3 +173,6 @@ target_link_libraries(human_localization ${catkin_LIBRARIES} inside_out_tracker)
 
 add_executable(imu_manager_node ${IMU_MANAGER_SOURCES} ${IMU_MANAGER_HEADERS})
 target_link_libraries(imu_manager_node ${catkin_LIBRARIES})
+
+add_executable(haptics_usb_node ${HAPTICS_SOURCES} ${HAPTICS_HEADERS})
+target_link_libraries(haptics_usb_node ${catkin_LIBRARIES} usb-1.0 hidapi-libusb mccusb)
