@@ -1,7 +1,13 @@
 <launch>
   <node pkg="hri_planner" type="haptics_usb_node" name="haptics_node" output="screen">
 	<param name="analog_out_channel0" value="1"/>
-	<param name="frequency_repel" value="50.0"/>
-	<param name="frequency_attract" value="50.0"/>
+	<param name="repetition_repel" value="1"/>
+	<param name="amplitude_repel" value="2.5"/>
+	<param name="period_render_repel" value="1.5"/>
+	<param name="period_pause_repel" value="0.5"/>
+	<param name="repetition_attract" value="3"/>
+	<param name="amplitude_attract" value="1.5"/>
+	<param name="period_render_attract" value="0.2"/>
+	<param name="period_pause_attract" value="0.2"/>
   </node>
 </launch>
