@@ -1,4 +1,15 @@
 <launch>
+  <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+    <param name="video_device" value="/dev/video0" />
+    <param name="image_width" value="800" />
+    <param name="image_height" value="600" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap"/>
+	<param name="framerate" value="30" />
+	<param name="autoexposure" value="false" />
+	<!--param name="camera_info_url" value="file://$(find hri_planner)/camera_calibration/logitech_c310.yml" /-->
+  </node>
   <node pkg="hri_planner" type="human_localization" name="human_tracker" output="screen">
   	<param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
 	<param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
@@ -11,7 +22,7 @@
 	<param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
 	<param name="marker_size" value="0.204"/>
   </node>
-  <node pkg="hri_planner" type="imu_manager_node" name="imu_manager" output="screen">
+  <!--node pkg="hri_planner" type="imu_manager_node" name="imu_manager" output="screen">
 	<remap from="/imu_data_raw" to="/tracking/imu_data_raw"/>
-  </node>
+  </node-->
 </launch>

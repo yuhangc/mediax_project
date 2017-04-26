@@ -1,4 +1,5 @@
 #include <string>
+#include <unordered_map>
 
 #include "ros/ros.h"
 #include "geometry_msgs/Vector3.h"
@@ -15,6 +16,15 @@ typedef enum
     State_Haptic_Pause
 } haptic_control_states;
 
+
+typedef struct {
+    int rep;
+    double amp;
+    double freq;            // in hz
+    double period_render;   // in secs
+    double period_pause;
+} haptic_param;
+
 class HapticController
 {
 public:
@@ -28,9 +38,12 @@ public:
     void update();
 
     // initialization
-    int init();
+    void init();
 
 private:
+    // node handler
+    ros::NodeHandle nh_;
+
     // subscriber and publisher
     ros::Subscriber haptic_control_sub;
 
@@ -40,28 +53,24 @@ private:
     hid_device *hid_3101;
 
     // control variables
-    double t_step;
-    double t_ramp;
     double t_state;
-    double t_render;
     double t_state_start;
     double t_vib_start;
 
     // haptic variables
     std::string haptic_effect;
-    int repetition;
-    double period_render;  // in secs
-    double period_pause;
-    double amp_max;
+    haptic_param render_param;
+
+    // rendering parameters
+    std::unordered_map<std::string, haptic_param> render_params_;
 
     // state variables
     haptic_control_states state;
     int set_state;
-    int vib_state;
 
     // callback functions
     void hapticCallback(const std_msgs::String::ConstPtr &haptic_msg);
 
     // other functions
-    void render(double amp_max);
+    void render(bool flag_render);
 };

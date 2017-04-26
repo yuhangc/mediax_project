@@ -154,6 +154,7 @@ set(IMU_MANAGER_HEADERS
 # set source, header for the haptics driver
 set(HAPTICS_SOURCES
     src/haptic_usb.cpp
+    src/nodes/haptic_node.cpp
 )
 
 set(HAPTICS_HEADERS

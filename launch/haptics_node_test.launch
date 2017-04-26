@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="hri_planner" type="haptics_usb_node" name="haptics_node" output="screen">
+	<param name="analog_out_channel0" value="1"/>
+	<param name="frequency_repel" value="50.0"/>
+	<param name="frequency_attract" value="50.0"/>
+  </node>
+</launch>
