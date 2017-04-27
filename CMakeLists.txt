@@ -106,9 +106,12 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIRS})
 
-## specify Eigen3 package and directories
+## specify the json package and directories
 find_package(nlohmann_json CONFIG REQUIRED)
 include_directories(${JSON_INCLUDE_DIR})
+
+## specify the json package and directories
+find_package(OpenGL REQUIRED)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -161,6 +164,22 @@ set(HAPTICS_HEADERS
     include/hri_planner/haptic_usb.h
 )
 
+# set source, header and the ui for the experiment main control window
+set(EXP_CONTROL_SOURCES
+    src/exp_main_window.cpp
+    src/gl_tracking_display.cpp
+    src/exp_control.cpp
+)
+
+set(EXP_CONTROL_HEADERS
+    include/hri_planner/exp_main_window.h
+    include/hri_planner/gl_tracking_display.h
+)
+
+set(EXP_CONTROL_FORMS
+    ui/exp_main_window.ui
+)
+
 ## Declare C++ libraries
 add_library(inside_out_tracker ${INSIDE_OUT_TRACKER_SOURCES} ${INSIDE_OUT_TRACKER_HEADERS})
 target_link_libraries(inside_out_tracker ${catkin_LIBRARIES} ${aruco_LIBS} ${OpenCV_LIBRARIES})
@@ -177,3 +196,13 @@ target_link_libraries(imu_manager_node ${catkin_LIBRARIES})
 
 add_executable(haptics_usb_node ${HAPTICS_SOURCES} ${HAPTICS_HEADERS})
 target_link_libraries(haptics_usb_node ${catkin_LIBRARIES} usb-1.0 hidapi-libusb mccusb)
+
+# compile the experiment main window application
+qt5_wrap_cpp(MOC_SOURCES ${EXP_CONTROL_HEADERS})
+qt5_wrap_ui(FORMS_HEADERS ${EXP_CONTROL_FORMS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+add_executable(hri_exp_control ${EXP_CONTROL_SOURCES} ${EXP_CONTROL_HEADERS} ${MOC_SOURCES} ${FORMS_HEADERS})
+target_link_libraries(hri_exp_control ${catkin_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
+qt5_use_modules(hri_exp_control Widgets)
+set_target_properties(hri_exp_control PROPERTIES OUTPUT_NAME exp_control)
