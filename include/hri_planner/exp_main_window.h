@@ -33,15 +33,29 @@ private:
     Ui::ExpMainWindow *ui;
 
     // Timer for GUI update
-    QTimer m_update_timer;
+    QTimer m_update_timer_;
 
     // node handler
-    ros::NodeHandle nh;
+    ros::NodeHandle nh_;
 
     // subscribers
-    ros::Subscriber robot_state_sub;
-    ros::Subscriber robot_odom_sub;
-    ros::Subscriber cmd_vel_sub;
+    ros::Subscriber robot_state_sub_;
+    ros::Subscriber robot_odom_sub_;
+    ros::Subscriber cmd_vel_sub_;
+    ros::Subscriber human_pose2d_sub_;
+
+    // variables
+    geometry_msgs::Pose2D human_pose_;
+    geometry_msgs::Pose2D robot_pose_;
+    geometry_msgs::Twist robot_vel_curr_;
+    geometry_msgs::Twist robot_vel_cmd_;
+
+    // callback functions
+    void human_pose_callback(const geometry_msgs::Pose2D::ConstPtr& pose2d_msg);
+
+signals:
+    void human_pose_received(double x, double y, double th);
+    void robot_pose_received(double x, double y, double th);
 };
 
 #endif // EXP_MAIN_WINDOW_H
