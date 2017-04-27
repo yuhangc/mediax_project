@@ -1,11 +1,13 @@
 #include <cmath>
+#include <iostream>
 
 #include "gl_tracking_display.h"
 
 //===========================================================================
 GLTrackingDisplay::GLTrackingDisplay(QWidget *parent) : QOpenGLWidget(parent)
 {
-
+    x_human_ = 0.0; y_human_ = 0.0; th_human_ = 0.0;
+    x_robot_ = 1.0; y_robot_ = 0.0; th_robot_ = 0.0;
 }
 
 //===========================================================================
@@ -33,7 +35,7 @@ void GLTrackingDisplay::resizeGL(int w, int h)
     gluPerspective(45, (float)w/h, 0.01, 100.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0,0,5,0,0,0,0,1,0);
+    gluLookAt(0.0,3.0,10,0.0,3.0,0,0,1,0);
 }
 
 //===========================================================================
@@ -50,7 +52,7 @@ void GLTrackingDisplay::set_robot_pose(double x_new, double y_new, double th_new
 {
     x_robot_ = x_new;
     y_robot_ = y_new;
-    th_robot_ = th_new;
+    th_robot_ = th_new + 1.57;
 }
 
 //===========================================================================
@@ -58,7 +60,7 @@ void GLTrackingDisplay::set_human_pose(double x_new, double y_new, double th_new
 {
     x_human_ = x_new;
     y_human_ = y_new;
-    th_human_ = th_new;
+    th_human_ = th_new + 1.57;
 }
 
 //===========================================================================

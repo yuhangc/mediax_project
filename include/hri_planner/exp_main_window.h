@@ -33,7 +33,7 @@ private:
     Ui::ExpMainWindow *ui;
 
     // Timer for GUI update
-    QTimer m_update_timer_;
+    QTimer update_timer_;
 
     // node handler
     ros::NodeHandle nh_;
@@ -56,6 +56,9 @@ private:
 signals:
     void human_pose_received(double x, double y, double th);
     void robot_pose_received(double x, double y, double th);
+
+private slots:
+    void update_gui_info();
 };
 
 #endif // EXP_MAIN_WINDOW_H
