@@ -4,6 +4,10 @@
 #include <QMainWindow>
 #include <QTimer>
 
+#include <fstream>
+#include <vector>
+#include <string>
+
 #include "ros/ros.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
@@ -41,17 +45,40 @@ private:
     // subscribers
     ros::Subscriber robot_state_sub_;
     ros::Subscriber robot_odom_sub_;
-    ros::Subscriber cmd_vel_sub_;
     ros::Subscriber human_pose2d_sub_;
+    ros::Subscriber robot_pose2d_sub_;
+    ros::Subscriber sys_msg_sub_;
 
-    // variables
+    // publishers
+    ros::Publisher set_robot_state_pub_;
+    ros::Publisher haptic_control_pub_;
+
+    // variables to record
+    int robot_state_;
     geometry_msgs::Pose2D human_pose_;
     geometry_msgs::Pose2D robot_pose_;
     geometry_msgs::Twist robot_vel_curr_;
     geometry_msgs::Twist robot_vel_cmd_;
 
+    // experiment control variables
+    int trial_num_;
+    int cond_num_;
+
+    // for data saving
+    std::string data_saving_path_;
+    std::ofstream data_file_;
+
+    bool flag_start_data_saving_;
+    double t_start_data_saving_;
+
     // callback functions
     void human_pose_callback(const geometry_msgs::Pose2D::ConstPtr& pose2d_msg);
+    void robot_pose_callback(const geometry_msgs::Pose2D::ConstPtr& pose2d_msg);
+
+    void robot_state_callback(const std_msgs::String::ConstPtr& state_msg);
+    void robot_odom_callback(const nav_msgs::Odometry::ConstPtr& odom_msg);
+
+    void sys_msg_callback(const std_msgs::String::ConstPtr& sys_msg);
 
 signals:
     void human_pose_received(double x, double y, double th);

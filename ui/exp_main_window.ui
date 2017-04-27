@@ -25,17 +25,27 @@
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>1</horstretch>
-          <verstretch>6</verstretch>
+          <verstretch>8</verstretch>
          </sizepolicy>
         </property>
         <property name="title">
          <string>Tracking</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0" colspan="2">
+          <widget class="GLTrackingDisplay" name="gl_tracking_display">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>1</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Position</string>
+            <string>Human Pose</string>
            </property>
           </widget>
          </item>
@@ -49,7 +59,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLCDNumber" name="lcd_human_pos_x"/>
+            <widget class="QLCDNumber" name="lcd_human_pose_x"/>
            </item>
            <item>
             <widget class="QLabel" name="label_4">
@@ -73,13 +83,44 @@
            </item>
           </layout>
          </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="GLTrackingDisplay" name="gl_tracking_display">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>1</horstretch>
-             <verstretch>1</verstretch>
-            </sizepolicy>
+         <item row="2" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>x:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLCDNumber" name="lcd_robot_pose_x"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>y:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLCDNumber" name="lcd_robot_pose_y"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_14">
+             <property name="text">
+              <string>theta</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLCDNumber" name="lcd_robot_pose_theta"/>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_19">
+           <property name="text">
+            <string>Robot Pose</string>
            </property>
           </widget>
          </item>
@@ -115,7 +156,7 @@
          <item row="0" column="1">
           <widget class="QLabel" name="label_robot_status">
            <property name="text">
-            <string>Position</string>
+            <string>Idle</string>
            </property>
           </widget>
          </item>
@@ -197,7 +238,18 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="combo_haptic_type"/>
+          <widget class="QComboBox" name="combo_haptic_type">
+           <item>
+            <property name="text">
+             <string>Repel</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Attract</string>
+            </property>
+           </item>
+          </widget>
          </item>
          <item row="0" column="2">
           <widget class="QPushButton" name="button_send_haptic">
@@ -242,20 +294,17 @@ p, li { white-space: pre-wrap; }
          <string>Robot Control</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_5">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_16">
-           <property name="text">
-            <string>Desired State</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QComboBox" name="combo_set_state"/>
-         </item>
          <item row="0" column="2">
           <widget class="QPushButton" name="button_set_state">
            <property name="text">
             <string>Set State</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_16">
+           <property name="text">
+            <string>Desired State</string>
            </property>
           </widget>
          </item>
@@ -272,6 +321,25 @@ p, li { white-space: pre-wrap; }
            </property>
           </spacer>
          </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="combo_set_state">
+           <item>
+            <property name="text">
+             <string>Idle</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Rand Move</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Teleop</string>
+            </property>
+           </item>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -286,6 +354,124 @@ p, li { white-space: pre-wrap; }
         <property name="title">
          <string>Experiment Control</string>
         </property>
+        <layout class="QGridLayout" name="gridLayout_8">
+         <item row="1" column="0">
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="1" column="0">
+            <widget class="QComboBox" name="combo_cond_set">
+             <item>
+              <property name="text">
+               <string>0 - Human Only</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>1 - Human + Robot</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2 - Robot + Haptics</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QSpinBox" name="spinBox_trial_num_set"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="button_set_start_trial">
+             <property name="text">
+              <string>Set Start Trial</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="button_set_cond">
+             <property name="text">
+              <string>Set Condition</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="1">
+          <layout class="QGridLayout" name="gridLayout_7">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="button_start_exp">
+             <property name="text">
+              <string>Start Exp</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="button_load_protocol">
+             <property name="text">
+              <string>Load Protocol</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QPushButton" name="button_stop_exp">
+             <property name="text">
+              <string>Stop Exp</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QLabel" name="label_18">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Trial #:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_trial_num">
+             <property name="text">
+              <string>number</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_17">
+             <property name="text">
+              <string>Condition</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_trial_cond">
+             <property name="text">
+              <string>Condition</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
