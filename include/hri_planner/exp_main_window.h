@@ -64,6 +64,10 @@ private:
     int trial_num_;
     int cond_num_;
 
+    // for publishing
+    std_msgs::String set_robot_state_;
+    std_msgs::String haptic_msg_;
+
     // for data saving
     std::string data_saving_path_;
     std::ofstream data_file_;
@@ -86,6 +90,10 @@ signals:
 
 private slots:
     void update_gui_info();
+    void on_combo_set_state_currentTextChanged(const QString &arg1);
+    void on_combo_haptic_type_currentTextChanged(const QString &arg1);
+    void on_button_set_state_clicked();
+    void on_button_send_haptic_clicked();
 };
 
 #endif // EXP_MAIN_WINDOW_H

@@ -28,7 +28,7 @@ HapticController::HapticController(ros::NodeHandle &nh, ros::NodeHandle &pnh) : 
     this->render_params_.insert({"attract", t_param});
 
     // handler and subscribers
-    this->haptic_control_sub = nh_.subscribe<std_msgs::String>("haptic_control", 1,
+    this->haptic_control_sub = nh_.subscribe<std_msgs::String>("/haptic_control", 1,
                                                               &HapticController::hapticCallback, this);
 }
 

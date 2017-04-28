@@ -1,0 +1,16 @@
+<launch>
+  <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+  <!--include file="$(find turtlebot_bringup)/launch/3dsensor.launch"/-->
+  
+  <!-- custom nodes for vision testing and following control -->
+  <node pkg="hri_planner" type="robot_supervisor.py" name="robot_supervisor">
+  </node>
+
+  <node pkg="hri_planner" type="velocity_smoother.py" name="velocity_smoother">
+  	<param name="maximum_increment_linear" type="double" value="0.02"/>
+  	<param name="maximum_increment_angular" type="double" value="1.0"/>
+  	<param name="velocity_cap_linear" type="double" value="1.0"/>
+  	<param name="velocity_cap_angular" type="double" value="3.0"/>
+  	<remap from="cmd_vel_smooth" to="cmd_vel_mux/input/teleop"/>
+  </node>
+</launch>

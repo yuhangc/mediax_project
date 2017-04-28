@@ -24,15 +24,17 @@ void ExpMainWindow::Init()
     robot_pose2d_sub_ = nh_.subscribe<geometry_msgs::Pose2D>("/tracking/robot_pose2d", 1,
                                                              &ExpMainWindow::robot_pose_callback, this);
 
-    robot_state_sub_ = nh_.subscribe<std_msgs::String>("/robot/status", 1,
+    robot_state_sub_ = nh_.subscribe<std_msgs::String>("/robot_state", 1,
                                                        &ExpMainWindow::robot_state_callback, this);
-    robot_odom_sub_ = nh_.subscribe<nav_msgs::Odometry>("/robot/odom", 1,
+    robot_odom_sub_ = nh_.subscribe<nav_msgs::Odometry>("/robot_odom", 1,
                                                         &ExpMainWindow::robot_odom_callback, this);
 
     sys_msg_sub_ = nh_.subscribe<std_msgs::String>("/sys_message", 1,
                                                    &ExpMainWindow::sys_msg_callback, this);
 
     // initialize publishers
+    set_robot_state_pub_ = nh_.advertise<std_msgs::String>("/set_robot_state", 1);
+    haptic_control_pub_ = nh_.advertise<std_msgs::String>("/haptic_control", 1);
 
     // get parameters
 
@@ -133,4 +135,28 @@ void ExpMainWindow::robot_odom_callback(const nav_msgs::Odometry::ConstPtr &odom
 void ExpMainWindow::sys_msg_callback(const std_msgs::String::ConstPtr &sys_msg)
 {
     ui->browser_sys_message->append(QString::fromStdString(sys_msg->data));
+}
+
+//===========================================================================
+void ExpMainWindow::on_combo_set_state_currentTextChanged(const QString &arg1)
+{
+    set_robot_state_.data = arg1.toStdString();
+}
+
+//===========================================================================
+void ExpMainWindow::on_combo_haptic_type_currentTextChanged(const QString &arg1)
+{
+    haptic_msg_.data = arg1.toStdString();
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_set_state_clicked()
+{
+    set_robot_state_pub_.publish(set_robot_state_);
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_send_haptic_clicked()
+{
+    haptic_control_pub_.publish(haptic_msg_);
 }
