@@ -18,7 +18,9 @@ class RobotSupervisor:
         self.rand_move_vel_lin = rospy.get_param("~rand_move_vel_lin", 0.3)
         self.rand_move_vel_ang = rospy.get_param("~rand_move_vel_ang", 1.0)
 
-        self.rand_move_params = {}
+        self.rand_move_params = {"rotate": {},
+                                 "forward": {},
+                                 "pause": {}}
         self.rand_move_params["rotate"]["t_min"] = rospy.get_param("~rand_move_rotate_time_min", 0.5)
         self.rand_move_params["rotate"]["t_max"] = rospy.get_param("~rand_move_rotate_time_max", 3.0)
         self.rand_move_params["forward"]["t_min"] = rospy.get_param("~rand_move_forward_time_min", 0.5)
