@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="hri_planner" type="exp_control" name="exp_control" output="screen">
+  	<param name="dir_loading_pre_set" value="$(find hri_planner)/protocols"/>
+	<param name="dir_saving_pre_set" value="$(env HOME)/Desktop"/>
+	<!--remap from="/inside_out_tracker/image" to="/usb_cam/image_raw"/ -->
+  </node>
+</launch>

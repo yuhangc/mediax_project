@@ -1,3 +1,5 @@
+#include <QFileDialog>
+
 #include "exp_main_window.h"
 #include "ui_exp_main_window.h"
 
@@ -37,10 +39,32 @@ void ExpMainWindow::Init()
     haptic_control_pub_ = nh_.advertise<std_msgs::String>("/haptic_control", 1);
 
     // get parameters
+    ros::param::param<std::string>("~dir_loading_pre_set", dir_loading_pre_set_, "/home");
+    ros::param::param<std::string>("~dir_saving_pre_set", dir_saving_pre_set_, "/home");
 
     // initialize variables
     human_pose_ = geometry_msgs::Pose2D();
     robot_pose_ = geometry_msgs::Pose2D();
+
+    exp_state_ = exp_state_idle;
+
+    trial_num_ = 0;
+    cond_num_ = 0;
+    num_cond_total_ = 0;
+
+    exp_num_ = 1;
+    config_num_ = 0;
+
+    // initialize flags
+    flag_start_data_saving_ = false;
+
+    flag_dir_saving_set_ = false;
+    flag_protocol_loaded_ = false;
+
+    flag_start_exp_requested_ = false;
+    flag_stop_exp_requested_ = false;
+
+    flag_exp_training_ = true;
 
     // connect signals and slots
     connect(this, SIGNAL(human_pose_received(double,double,double)),
@@ -48,21 +72,254 @@ void ExpMainWindow::Init()
     connect(this, SIGNAL(robot_pose_received(double,double,double)),
             ui->gl_tracking_display, SLOT(set_robot_pose(double,double,double)));
 
-    connect(&update_timer_, SIGNAL(timeout()), this, SLOT(update_gui_info()));
+    connect(&update_timer_, SIGNAL(timeout()), this, SLOT(exp_state_update()));
     connect(&update_timer_, SIGNAL(timeout()), ui->gl_tracking_display, SLOT(update()));
     update_timer_.start(30);
 }
 
 //===========================================================================
-void ExpMainWindow::update_gui_info()
+void ExpMainWindow::load_protocol(std::string file_name)
+{
+    std::ifstream protocol(file_name);
+    if (!protocol.is_open()) {
+        ui->browser_sys_message->append("Cannot open protocol file! Please try again.");
+        return;
+    }
+
+    json proto_parser;
+    protocol >> proto_parser;
+
+    if (proto_parser["experiment_name"] == "exp1") {
+        exp_num_ = 1;
+        load_protocol_exp1(proto_parser);
+    }
+    else if (proto_parser["experiment_name"] == "exp2") {
+        exp_num_ = 2;
+        load_protocol_exp2(proto_parser);
+    }
+
+    flag_protocol_loaded_ = true;
+    flag_exp_training_ = true;
+
+    cond_num_ = 0;
+    trial_num_ = 0;
+    set_cond_trial_text();
+}
+
+//===========================================================================
+void ExpMainWindow::load_protocol_exp1(json &proto_parser)
+{
+    config_num_ = proto_parser["configuration"];
+
+    if (config_num_ == 0) {
+        // the configuration where the robot stays still
+        num_cond_total_ = proto_parser["num_conditions"];
+
+        num_trial_total_.clear();
+        num_training_total_.clear();
+        for (int i = 0; i < num_cond_total_; i++) {
+            num_trial_total_.push_back(proto_parser["num_trials"][i]);
+            num_training_total_.push_back(proto_parser["num_trainings"][i]);
+        }
+
+        robot_action_list_.clear();
+        for (int i = 0; i < num_cond_total_; i++) {
+            std::vector<int> action_list;
+            int trials_total = num_training_total_[i] + num_trial_total_[i];
+            for (int j = 0; j < trials_total; j++) {
+                std::stringstream field_name;
+                field_name << "condition_" << i;
+
+                action_list.push_back(proto_parser["robot_actions"][field_name.str()][j]);
+            }
+            robot_action_list_.push_back(action_list);
+        }
+    }
+    else if (config_num_ == 1){
+        // to be implemented
+    }
+}
+
+//===========================================================================
+void ExpMainWindow::load_protocol_exp2(json &proto_parser)
+{
+    // TODO: to be implemented
+}
+
+//===========================================================================
+void ExpMainWindow::start_data_saving()
+{
+    std::stringstream file_name;
+    if (flag_exp_training_) {
+        file_name << dir_saving_ << "/training_cond" << cond_num_
+                  << "_trial" << trial_num_ << ".txt";
+    }
+    else {
+        file_name << dir_saving_ << "/cond" << cond_num_
+                  << "_trial" << trial_num_ << ".txt";
+    }
+
+    data_stream_.open(file_name.str());
+    ui->browser_sys_message->append("Created file " + QString::fromStdString(file_name.str()));
+}
+
+//===========================================================================
+void ExpMainWindow::stop_data_saving()
+{
+    data_stream_.close();
+}
+
+//===========================================================================
+void ExpMainWindow::save_exp_data()
+{
+    // may save different information based on which experiment is running
+    switch (exp_num_) {
+    case 1:
+        data_stream_ << ros::Time().now() << ", "
+                     << human_pose_.x << ", " << human_pose_.y << ", " << human_pose_.theta << ", "
+                     << robot_pose_.x << ", " << robot_pose_.y << ", " << robot_pose_.theta << ", "
+                     << robot_vel_curr_.linear.x << ", " << robot_vel_curr_.angular.z
+                     << std::endl;
+        break;
+    case 2:
+        break;
+    default:
+        break;
+    }
+}
+
+//===========================================================================
+void ExpMainWindow::exp_state_update()
 {
     // spin ros
     ros::spinOnce();
+
+    // main exp state machine
+    switch (exp_num_) {
+    case 1:
+        if (config_num_ == 0) {
+            state_machine_exp1_config0();
+        }
+        else {
+            state_machine_exp1_config1();
+        }
+        break;
+    case 2:
+        state_machine_exp2();
+        break;
+    default:
+        ui->browser_sys_message->append("Unknown experiment configuration!");
+    }
 
     // check for shutdown
     if (ros::isShuttingDown()) {
         this->close();
     }
+}
+
+//===========================================================================
+void ExpMainWindow::state_machine_exp1_config0()
+{
+    switch (exp_state_) {
+    case exp_state_idle:
+        // check for condition and trial number
+        if (cond_num_ >= num_cond_total_ || trial_num_ >= num_trial_total_[cond_num_]) {
+            return;
+        }
+
+        // check for start experiment flag
+        if (flag_start_exp_requested_) {
+            start_data_saving();
+            send_robot_action();
+            exp_state_ = exp_state_experimenting;
+            ui->browser_sys_message->append("Started experiment!");
+        }
+        break;
+    case exp_state_experimenting:
+        save_exp_data();
+
+        // check for stop experiment flag
+        if (flag_stop_exp_requested_) {
+            stop_data_saving();
+
+            // update trial number and condition number
+            trial_num_ ++;
+            if (flag_exp_training_) {
+                if (trial_num_ >= num_training_total_[cond_num_]) {
+                    trial_num_ = 0;
+                    flag_exp_training_ = false;
+                    ui->browser_sys_message->append("Training ended!");
+                }
+            }
+            else {
+                if (trial_num_ >= num_trial_total_[cond_num_]) {
+                    cond_num_ ++;
+                    trial_num_ = 0;
+                    flag_exp_training_ = true;
+                    ui->browser_sys_message->append("Condition ended!");
+                }
+            }
+
+            set_cond_trial_text();
+
+            exp_state_ = exp_state_idle;
+            ui->browser_sys_message->append("Stopped experiment!");
+        }
+        break;
+    default:
+        ui->browser_sys_message->append("Unknown experiment state!");
+        break;
+    }
+
+    // reset some of the flags to prevent unwanted state switching
+    flag_start_exp_requested_ = false;
+    flag_stop_exp_requested_ = false;
+}
+
+//===========================================================================
+void ExpMainWindow::state_machine_exp1_config1()
+{
+    // TODO: to be implemented
+}
+
+//===========================================================================
+void ExpMainWindow::state_machine_exp2()
+{
+    // to be implemented
+}
+
+//===========================================================================
+void ExpMainWindow::send_robot_action()
+{
+    int action_id = trial_num_;
+    if (flag_exp_training_) {
+        action_id += num_training_total_[cond_num_];
+    }
+
+    if (robot_action_list_[cond_num_][action_id] == 0) {
+        // TODO: do something
+    }
+    else if (robot_action_list_[cond_num_][action_id] == 1) {
+        // TODO: do something else
+    }
+}
+
+//===========================================================================
+void ExpMainWindow::set_cond_trial_text()
+{
+    QString text = QString::number(trial_num_);
+    if (flag_exp_training_) {
+        text = "Training " + text;
+    }
+
+    ui->label_trial_num->setText(text);
+    ui->label_trial_cond->setText(ui->combo_cond_set->itemText(cond_num_));
+}
+
+//===========================================================================
+void ExpMainWindow::update_gui_info()
+{
+    // update gui info
 }
 
 //===========================================================================
@@ -159,4 +416,40 @@ void ExpMainWindow::on_button_set_state_clicked()
 void ExpMainWindow::on_button_send_haptic_clicked()
 {
     haptic_control_pub_.publish(haptic_msg_);
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_load_protocol_clicked()
+{
+    QString file_name = QFileDialog::getOpenFileName(this, tr("Open Protocal File"),
+                                                     dir_loading_pre_set_.c_str(), tr("JSON files (*.json);;Text files (*.txt)"));
+    load_protocol(file_name.toStdString());
+    ui->browser_sys_message->append("Loaded protocal: " + file_name);
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_set_saving_dir_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Set Data Saving Directory"), dir_saving_pre_set_.c_str());
+    dir_saving_ = dir.toStdString();
+    ui->browser_sys_message->append("Data Saving Directory: " + dir);
+
+    flag_dir_saving_set_ = true;
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_start_exp_clicked()
+{
+    if ((!flag_dir_saving_set_) || (!flag_protocol_loaded_)) {
+        ui->browser_sys_message->append("Protocol directory or saving directory not set!");
+        return;
+    }
+
+    flag_start_exp_requested_ = true;
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_stop_exp_clicked()
+{
+    flag_stop_exp_requested_ = true;
 }

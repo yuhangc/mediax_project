@@ -1,0 +1,26 @@
+{
+  "experiment_name": "exp1",
+  "configuration": 0,
+
+  "human_start_pose": {
+    "x": 0.0, "y": 1.0,
+    "theta": 0.0,
+    "units": ["meter", "deg"]
+  },
+  "human_goal_pose": {
+    "x": 0.0, "y": 1.0,
+    "theta": 0.0,
+    "units": ["meter", "deg"]
+  },
+
+  "num_conditions": 3,
+  "num_trainings": [5, 5, 5],
+  "num_trials": [5, 10, 10],
+
+  "robot_actions": {
+    "_comment": "must match number of conditions and number of trainings + trials, 0 represents stationary and 1 represents random move",
+    "condition_0": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "condition_1": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    "condition_2": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+  }
+}

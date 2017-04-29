@@ -18,6 +18,15 @@
 #include "std_msgs/Bool.h"
 #include "nav_msgs/Odometry.h"
 
+#include "json.hpp"
+using json = nlohmann::json;
+
+typedef enum {
+    exp_state_idle,
+    exp_state_training,
+    exp_state_experimenting
+} exp_state_type;
+
 namespace Ui {
 class ExpMainWindow;
 }
@@ -61,19 +70,63 @@ private:
     geometry_msgs::Twist robot_vel_cmd_;
 
     // experiment control variables
+    int exp_num_;
+    int config_num_;
+
     int trial_num_;
     int cond_num_;
+
+    int num_cond_total_;
+    std::vector<int> num_trial_total_;
+    std::vector<int> num_training_total_;
+    std::vector< std::vector<int> > robot_action_list_;
+
+    exp_state_type exp_state_;
 
     // for publishing
     std_msgs::String set_robot_state_;
     std_msgs::String haptic_msg_;
 
     // for data saving
-    std::string data_saving_path_;
-    std::ofstream data_file_;
+    std::string dir_saving_;
+    std::ofstream data_stream_;
 
     bool flag_start_data_saving_;
     double t_start_data_saving_;
+
+    // pre-set file loading and saving locations
+    std::string dir_loading_pre_set_;
+    std::string dir_saving_pre_set_;
+
+    // flags
+    bool flag_protocol_loaded_;
+    bool flag_dir_saving_set_;
+
+    bool flag_start_exp_requested_;
+    bool flag_stop_exp_requested_;
+
+    bool flag_exp_training_;
+
+    // load experiment protocols
+    void load_protocol(std::string file_name);
+    void load_protocol_exp1(json& proto_parser);
+    void load_protocol_exp2(json& proto_parser);
+
+    // state machine functions
+    void state_machine_exp1_config0();
+    void state_machine_exp1_config1();
+    void state_machine_exp2();
+
+    // functions for data saving
+    void save_exp_data();
+    void start_data_saving();
+    void stop_data_saving();
+
+    // send desired action to robot
+    void send_robot_action();
+
+    // update UI components
+    void set_cond_trial_text();
 
     // callback functions
     void human_pose_callback(const geometry_msgs::Pose2D::ConstPtr& pose2d_msg);
@@ -90,10 +143,15 @@ signals:
 
 private slots:
     void update_gui_info();
+    void exp_state_update();
     void on_combo_set_state_currentTextChanged(const QString &arg1);
     void on_combo_haptic_type_currentTextChanged(const QString &arg1);
     void on_button_set_state_clicked();
     void on_button_send_haptic_clicked();
+    void on_button_load_protocol_clicked();
+    void on_button_set_saving_dir_clicked();
+    void on_button_start_exp_clicked();
+    void on_button_stop_exp_clicked();
 };
 
 #endif // EXP_MAIN_WINDOW_H
