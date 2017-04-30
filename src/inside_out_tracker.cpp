@@ -6,10 +6,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "tf/transform_datatypes.h"
 
-#include "json.hpp"
 #include "inside_out_tracker.h"
 
-using json = nlohmann::json;
+using std::sin;
+using std::cos;
 
 #define INCH2METER 0.0254
 #define DEG2RAD M_PI / 180.0
@@ -58,18 +58,18 @@ namespace inside_out_tracker {
         this->load_filter_param(filter_param_file);
 
         // initialize publishers and subscribers
-        this->m_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("tracking/pose2d", 1);
+        this->m_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("inside_out_tracker/pose2d", 1);
         this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
                                                                      &InsideOutTracker::camera_rgb_callback, this);
-        this->m_imu_sub = this->nh_.subscribe<std_msgs::Float32MultiArray>("tracking/imu_data_raw", 1,
+        this->m_imu_sub = this->nh_.subscribe<std_msgs::Float32MultiArray>("inside_out_tracker/imu_data_raw", 1,
                                                                     &InsideOutTracker::imu_callback, this);
-        this->m_odom_sub = this->nh_.subscribe<nav_msgs::Odometry>("tracking/odom", 1,
+        this->m_odom_sub = this->nh_.subscribe<nav_msgs::Odometry>("inside_out_tracker/odom", 1,
                                                                    &InsideOutTracker::odom_callback, this);
-        this->m_reset_sub = this->nh_.subscribe<std_msgs::Bool>("tracking/reset", 1,
+        this->m_reset_sub = this->nh_.subscribe<std_msgs::Bool>("inside_out_tracker/reset", 1,
                                                                 &InsideOutTracker::reset_callback, this);
 
         // time interval for discretization
-        this->m_dt_process = 0.02;
+        this->m_dt_process = 0.05;
 
         // initialize velocity and pose history
         this->m_body_pose_last = geometry_msgs::Pose2D();
@@ -92,6 +92,16 @@ namespace inside_out_tracker {
 
         map_stream >> j;
 
+        if (j["type"] == "marker_map") {
+            load_marker_map(j);
+        }
+        else {
+            load_board_map(j);
+        }
+    }
+
+    // ============================================================================
+    void InsideOutTracker::load_marker_map(json &j) {
         int num_markers = j["num_markers"];
 
         this->map_markers.clear();
@@ -116,6 +126,48 @@ namespace inside_out_tracker {
             // insert to the marker map
             int marker_id = j[field_name.str()]["id"];
             this->map_markers.insert({marker_id, pose});
+        }
+    }
+
+    // ============================================================================
+    void InsideOutTracker::load_board_map(json &j) {
+        int num_boards = j["num_boards"];
+
+        this->map_markers.clear();
+        for (int i = 0; i < num_boards; i++) {
+            std::stringstream board_name_stream;
+            board_name_stream << "board" << i;
+            std::string board_name = board_name_stream.str();
+
+            double board_x = j[board_name]["x"];
+            double board_y = j[board_name]["y"];
+            double board_th = j[board_name]["theta"];
+            double grid_height = j[board_name]["grid_height"];
+            double grid_width = j[board_name]["grid_width"];
+            int h = j[board_name]["height"];
+            int w = j[board_name]["width"];
+
+            for (int gy = 0; gy < h; gy++) {
+                for (int gx = 0; gx < w; gx++) {
+                    geometry_msgs::Pose2D pose;
+
+                    pose.x = board_x + (double)gx * grid_width * cos(board_th);
+                    pose.y = board_y + (double)gx * grid_width * sin(board_th);
+                    pose.theta = board_th;
+
+                    // convert units if necessary
+                    if (j[board_name]["units"][0] == "inch") {
+                        pose.x *= INCH2METER;
+                        pose.y *= INCH2METER;
+                    }
+                    if (j[board_name]["units"][1] == "deg") {
+                        pose.theta *= DEG2RAD;
+                    }
+
+                    int marker_id = j[board_name]["marker_id_list"][gy * w + gx];
+                    this->map_markers.insert({marker_id, pose});
+                }
+            }
         }
     }
 
@@ -192,14 +244,6 @@ namespace inside_out_tracker {
         for (int i = 0; i < this->m_markers.size(); i++) {
             this->m_markers[i].draw(t_output_image, cv::Scalar(0, 0, 255), 1);
         }
-//
-//        // draw cubes on the marker
-//        if (this->m_cam_param.isValid() && this->m_marker_size > 0) {
-//            for (int i = 0; i < this->m_markers.size(); i++) {
-//                aruco::CvDrawingUtils::draw3dCube(t_output_image, this->m_markers[i], this->m_cam_param, true);
-//                aruco::CvDrawingUtils::draw3dAxis(t_output_image, this->m_markers[i], this->m_cam_param);
-//            }
-//        }
 
         // display the image
         cv::imshow("test", t_output_image);
@@ -208,7 +252,57 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-    void InsideOutTracker::odom_process_update() {
+    void InsideOutTracker::odom_process_update(const nav_msgs::OdometryConstPtr &odom_msg) {
+        double v = odom_msg->twist.twist.linear.x;
+        double om = odom_msg->twist.twist.angular.z;
+        double x = this->m_mu[0];
+        double y = this->m_mu[1];
+        double th = this->m_mu[2];
+        const double &dt = m_dt_process;
+
+        // compute the Jacobians Gx, Gu
+        Eigen::Matrix3d Gx;
+        Eigen::Matrix<double, 3, 2> Gu;
+        double x_new, y_new, th_new;
+
+        if (std::abs(om) > 1e-5) {
+            th_new = wrap_to_pi(th + om * dt);
+            x_new = x + v / om * (sin(th_new) - sin(th));
+            y_new = y - v / om * (cos(th_new) - cos(th));
+
+            Gx << 1.0, 0.0, v / om * (cos(th_new) - cos(th)),
+                    0.0, 1.0, v / om * (sin(th_new) - sin(th)),
+                    0.0, 0.0, 1.0;
+
+            Gu << 1.0 / om * (sin(th_new) - sin(th)), v / (om*om) * (sin(th) - sin(th_new) + cos(th_new) * om * dt),
+                    -1.0 / om * (cos(th_new) - cos(th)), v / (om*om) * (-cos(th) + cos(th_new) + sin(th_new) * om * dt),
+                    0.0, dt;
+        }
+        else {
+            th_new = wrap_to_pi(th + om * dt);
+            x_new = x + v * cos(th) * dt;
+            y_new = y + v * sin(th) * dt;
+
+            Gx << 1.0, 0.0, -v * sin(th) * dt,
+                    0.0, 1.0, v * cos(th) * dt,
+                    0.0, 0.0, 1.0;
+
+            Gu << cos(th) * dt, -0.5 * v *sin(th) * dt * dt,
+                    sin(th) * dt, 0.5 * v * cos(th) * dt * dt,
+                    0.0, dt;
+        }
+
+        // update mean and covariance
+        m_mu[0] = x_new;
+        m_mu[1] = y_new;
+        m_mu[2] = th_new;
+
+        Eigen::Matrix2d cov_process;
+        cov_process << odom_msg->twist.covariance[0], odom_msg->twist.covariance[5],
+                odom_msg->twist.covariance[30], odom_msg->twist.covariance[35];
+
+        m_cov.topLeftCorner(3, 3) = Gx * m_cov.topLeftCorner(3, 3) * Gx.transpose() +
+                dt * Gu * cov_process * Gu.transpose();
     }
 
     // ============================================================================
@@ -222,10 +316,10 @@ namespace inside_out_tracker {
         const double &th = this->m_mu[2];
         const double &dt = this->m_dt_process;
         Eigen::Matrix2d R_th;
-        R_th << std::cos(th), -std::sin(th), std::sin(th), std::cos(th);
+        R_th << cos(th), -sin(th), sin(th), cos(th);
 
-        double acc_x = acc_meas[0] * std::cos(th) - acc_meas[1] * std::sin(th);
-        double acc_y = acc_meas[0] * std::sin(th) + acc_meas[1] * std::cos(th);
+        double acc_x = acc_meas[0] * cos(th) - acc_meas[1] * sin(th);
+        double acc_y = acc_meas[0] * sin(th) + acc_meas[1] * cos(th);
 
         Vector5d mu_diff;
         Matrix5d Gt, Rt;
@@ -448,7 +542,7 @@ namespace inside_out_tracker {
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
         if (this->filter_mode == "kalman" && this->odom_source == "odom" && !this->m_flag_reset_filter)
-            this->odom_process_update();
+            this->odom_process_update(odom_msg);
     }
 
     // ============================================================================

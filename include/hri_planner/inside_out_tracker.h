@@ -18,6 +18,9 @@
 
 #include "Eigen/Dense"
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #define _USE_MATH_DEFINES
 
 namespace inside_out_tracker {
@@ -117,11 +120,13 @@ private:
 
     // function to load parameters from .json file
     void load_map(const std::string file_name);
+    void load_marker_map(json &j);
+    void load_board_map(json &j);
     void load_filter_param(const std::string file_name);
 
     // update functions
     void detect_markers();
-    void odom_process_update();
+    void odom_process_update(const nav_msgs::OdometryConstPtr &odom_msg);
     void imu_process_update(Eigen::Vector3d acc_meas, Eigen::Vector3d gyro_meas);
     void measurement_update();
     void simple_update();

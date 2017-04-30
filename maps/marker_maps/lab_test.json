@@ -1,5 +1,7 @@
 {
+  "type": "marker_map",
   "num_markers": 9,
+
   "marker0": {
     "id": 101,
     "x": 0.0, "y": 180.0,
