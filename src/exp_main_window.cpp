@@ -42,6 +42,8 @@ void ExpMainWindow::Init()
     ros::param::param<std::string>("~dir_loading_pre_set", dir_loading_pre_set_, "/home");
     ros::param::param<std::string>("~dir_saving_pre_set", dir_saving_pre_set_, "/home");
 
+    ros::param::param<bool>("~use_odom_as_pose", flag_use_odom_as_pose_, true);
+
     // initialize variables
     human_pose_ = geometry_msgs::Pose2D();
     robot_pose_ = geometry_msgs::Pose2D();
@@ -297,10 +299,26 @@ void ExpMainWindow::send_robot_action()
     }
 
     if (robot_action_list_[cond_num_][action_id] == 0) {
-        // TODO: do something
+        // set to idle
+        set_robot_state_.data = "Idle";
+        set_robot_state_pub_.publish(set_robot_state_);
+
+        // also send haptic message
+        if (cond_num_ == 2) {
+            haptic_msg_.data = "Attract";
+            haptic_control_pub_.publish(haptic_msg_);
+        }
     }
     else if (robot_action_list_[cond_num_][action_id] == 1) {
-        // TODO: do something else
+        // set to random move
+        set_robot_state_.data = "RandMove";
+        set_robot_state_pub_.publish(set_robot_state_);
+
+        // also send haptic message
+        if (cond_num_ == 2) {
+            haptic_msg_.data = "Repel";
+            haptic_control_pub_.publish(haptic_msg_);
+        }
     }
 }
 
@@ -382,6 +400,15 @@ void ExpMainWindow::robot_odom_callback(const nav_msgs::Odometry::ConstPtr &odom
     // record robot velocity
     robot_vel_curr_.linear.x = odom_msg->twist.twist.linear.x;
     robot_vel_curr_.angular.z = odom_msg->twist.twist.angular.y;
+
+    // optional: record odom pose as the robot pose
+    if (flag_use_odom_as_pose_) {
+        robot_pose_.x = odom_msg->pose.pose.position.x;
+        robot_pose_.y = odom_msg->pose.pose.position.y;
+
+        // send out the signal
+        emit robot_pose_received(robot_pose_.x, robot_pose_.y, robot_pose_.theta);
+    }
 
     // display the velocity
     ui->lcd_vel_current_lin->display(robot_vel_curr_.linear.x);

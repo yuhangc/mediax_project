@@ -76,10 +76,10 @@ void HapticController::init()
 void HapticController::hapticCallback(const std_msgs::String::ConstPtr &haptic_msg)
 {
     // get message data
-    if (haptic_msg->data == "repel") {
+    if (haptic_msg->data == "Repel") {
         this->render_param = this->render_params_["repel"];
     }
-    else if (haptic_msg->data == "attract") {
+    else if (haptic_msg->data == "Attract") {
         this->render_param = this->render_params_["attract"];
     }
 

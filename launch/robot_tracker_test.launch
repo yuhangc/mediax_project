@@ -9,9 +9,10 @@
 	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="filter_mode" value="kalman"/>
-	  <remap from="/inside_out_tracker/image" to="/$(arg camera)/rgb/image_raw"/>
-	  <remap from="/inside_out_tracker/pose2d" to="/tracking/robot_pose2d"/>
-	  <remap from="/inside_out_tracker/odom" to="/odom"/>
+      <param name="odom_source" value="odom"/>
+	  <remap from="/$(arg camera)/inside_out_tracker/image" to="/$(arg camera)/rgb/image_raw"/>
+	  <remap from="/$(arg camera)/inside_out_tracker/pose2d" to="/tracking/robot_pose2d"/>
+	  <remap from="/$(arg camera)/inside_out_tracker/odom" to="/odom"/>
   </node>
 
   <!--node pkg="hri_planner" type="imu_manager_node" name="imu_manager" output="screen">

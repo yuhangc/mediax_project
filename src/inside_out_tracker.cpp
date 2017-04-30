@@ -13,7 +13,7 @@ using std::cos;
 
 #define INCH2METER 0.0254
 #define DEG2RAD M_PI / 180.0
-#define DEBUG_DRAW_MARKER
+// #define DEBUG_DRAW_MARKER
 
 namespace inside_out_tracker {
 
@@ -303,6 +303,13 @@ namespace inside_out_tracker {
 
         m_cov.topLeftCorner(3, 3) = Gx * m_cov.topLeftCorner(3, 3) * Gx.transpose() +
                 dt * Gu * cov_process * Gu.transpose();
+
+        // publish the new predicted pose
+        this->m_body_pose.x = this->m_mu[0];
+        this->m_body_pose.y = this->m_mu[1];
+        this->m_body_pose.theta = this->m_mu[2];
+        this->m_pose_pub.publish(this->m_body_pose);
+        std::cout << "odom update!"<< std::endl;
     }
 
     // ============================================================================
@@ -393,7 +400,7 @@ namespace inside_out_tracker {
             rot_marker = this->m_rot_cam_to_world * rot_marker;
 
             th_meas = this->map_markers[id].theta
-                      - std::atan2(rot_marker(1, 0), rot_marker(0, 0));
+                      - std::atan2(rot_marker(1, 0), rot_marker(0, 0)) + 1.57;
 
             // obtain position of the camera based on marker pose
             Eigen::Matrix2d t_rot_cam;
@@ -437,6 +444,7 @@ namespace inside_out_tracker {
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
             this->m_cov -= Kt * Ht * this->m_cov;
         }
+        std::cout << "measurement update!" << std::endl;
     }
 
     // ============================================================================
@@ -444,6 +452,7 @@ namespace inside_out_tracker {
         // don't update if no markers detected
         if (this->m_markers.size() == 0)
             return;
+        std::cout << "shouldn't be heere!" << std::endl;
 
         // extract marker poses
         Eigen::Vector2d pos(0.0, 0.0);
@@ -517,10 +526,13 @@ namespace inside_out_tracker {
 
         // detect markers
         this->detect_markers();
+        std::cout << "say something" << std::endl;
+        ROS_ERROR("something");
 
         if (this->filter_mode == "low_pass" || this->m_flag_reset_filter) {
             // perform simple position update
             this->simple_update();
+            std::cout << "updated" << std::endl;
         } else if (this->filter_mode == "kalman") {
             // perform measurement update
             this->measurement_update();
@@ -541,6 +553,7 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
+        std::cout << "odomodomodom" << std::endl;
         if (this->filter_mode == "kalman" && this->odom_source == "odom" && !this->m_flag_reset_filter)
             this->odom_process_update(odom_msg);
     }

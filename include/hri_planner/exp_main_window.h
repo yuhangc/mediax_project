@@ -102,6 +102,8 @@ private:
     bool flag_protocol_loaded_;
     bool flag_dir_saving_set_;
 
+    bool flag_use_odom_as_pose_;
+
     bool flag_start_exp_requested_;
     bool flag_stop_exp_requested_;
 
