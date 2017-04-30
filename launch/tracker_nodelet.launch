@@ -18,7 +18,7 @@
 
 	<node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet camera_nodelet_manager" output="screen">
 	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
 	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="filter_mode" value="low_pass"/>
