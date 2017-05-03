@@ -94,6 +94,10 @@ private:
     // time interval for discretization
     double m_dt_process;
 
+    // skipping frames
+    int m_num_frames_skip;
+    int m_num_frames_skipped;
+
     // camera parameters
     aruco::CameraParameters m_cam_param;
 

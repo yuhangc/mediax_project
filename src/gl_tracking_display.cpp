@@ -52,7 +52,7 @@ void GLTrackingDisplay::set_robot_pose(double x_new, double y_new, double th_new
 {
     x_robot_ = x_new;
     y_robot_ = y_new;
-    th_robot_ = th_new + 1.57;
+    th_robot_ = th_new;
 }
 
 //===========================================================================

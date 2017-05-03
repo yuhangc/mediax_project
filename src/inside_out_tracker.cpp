@@ -13,7 +13,7 @@ using std::cos;
 
 #define INCH2METER 0.0254
 #define DEG2RAD M_PI / 180.0
-#define DEBUG_DRAW_MARKER
+//#define DEBUG_DRAW_MARKER
 
 namespace inside_out_tracker {
 
@@ -36,6 +36,7 @@ namespace inside_out_tracker {
 
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
         pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
+        pnh.param<int>("num_frames_skip", this->m_num_frames_skip, 0);
         pnh.param<double>("velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
         pnh.param<double>("pose_change_threshold", this->m_pose_change_thresh, 0.3);
 
@@ -75,6 +76,8 @@ namespace inside_out_tracker {
         // initialize velocity and pose history
         this->m_body_pose_last = geometry_msgs::Pose2D();
         this->m_body_vel_last = geometry_msgs::Vector3();
+
+        this->m_num_frames_skipped = 0;
 
         this->m_flag_reset_filter = true;
         this->m_mu.setZero(); this->m_mu[1] = 3;
@@ -390,7 +393,7 @@ namespace inside_out_tracker {
         for (int i = 0; i < n; i++) {
             // do nothing if the detected marker is not in the map
             int id = this->m_markers[i].id;
-            if (this->map_markers.count(this->m_markers[i].id) == 0)
+            if (this->map_markers.count(id) == 0)
                 continue;
 
             // extract the measured orientation and position
@@ -405,7 +408,7 @@ namespace inside_out_tracker {
             rot_marker = this->m_rot_cam_to_world * rot_marker;
 
             th_meas = this->map_markers[id].theta
-                      - std::atan2(rot_marker(1, 0), rot_marker(0, 0)) + 1.57;
+                      - std::atan2(rot_marker(1, 0), rot_marker(0, 0));
 
             // obtain position of the camera based on marker pose
             Eigen::Matrix2d t_rot_cam;
@@ -416,13 +419,14 @@ namespace inside_out_tracker {
                                              this->m_markers[i].Tvec.at<float>(2, 0));
 
             xy_meas = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
+            th_meas += 1.57;
 
             // obtain the predicted measurements
             Eigen::Vector2d xy_pred(this->m_mu[0],
                                     this->m_mu[1]);
             double th_pred = this->m_mu[2];
 
-//            std::cout << xy_pred[0] << "  " << xy_pred[1] << "  " << th_pred << std::endl;
+            std::cout << xy_meas[0] << "  " << xy_meas[1] << "  " << th_meas << std::endl;
 
             // calculate measurement Jacobian
             Eigen::Matrix<double, 3, 5> Ht;
@@ -449,6 +453,7 @@ namespace inside_out_tracker {
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
             this->m_cov -= Kt * Ht * this->m_cov;
         }
+        std::cout << "measurement update!" << std::endl;
     }
 
     // ============================================================================
@@ -490,16 +495,20 @@ namespace inside_out_tracker {
             Eigen::Vector2d t_pos = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
 
             // check the difference to the current pose
-            double pose_diff = std::abs(m_mu[0] - t_pos[0]) + std::abs(m_mu[1] - t_pos[1]) +
-                    std::abs(wrap_to_pi(m_mu[2] - roll));
+//            double pose_diff = std::abs(m_mu[0] - t_pos[0]) + std::abs(m_mu[1] - t_pos[1]) +
+//                    std::abs(wrap_to_pi(m_mu[2] - roll));
 
-            if (pose_diff < m_pose_change_thresh || m_flag_reset_filter) {
-                t_theta.push_back(wrap_to_pi(roll));
-                pos += t_pos;
-                std::cout << roll << "  ";
-            }
+//            if (pose_diff < m_pose_change_thresh || m_flag_reset_filter) {
+//                t_theta.push_back(wrap_to_pi(roll));
+//                pos += t_pos;
+//                std::cout << roll << "  ";
+//            }
+            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << roll << std::endl;
+
+            t_theta.push_back(wrap_to_pi(roll));
+            pos += t_pos;
         }
-        std::cout << std::endl;
+//        std::cout << std::endl;
 
         // return if no valid markers detected
         if (t_theta.size() <=0 ) {
@@ -541,6 +550,13 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg) {
+        if (m_num_frames_skipped < m_num_frames_skip) {
+            // skip this frame
+            m_num_frames_skipped ++;
+            return;
+        }
+
+        m_num_frames_skipped = 0;
         this->m_image_input = cv_bridge::toCvCopy(image_msg, "bgr8")->image;
 
         // detect markers
@@ -571,7 +587,6 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
-        std::cout << "odomodomodom" << std::endl;
         if (this->filter_mode == "kalman" && this->odom_source == "odom" && !this->m_flag_reset_filter)
             this->odom_process_update(odom_msg);
     }
