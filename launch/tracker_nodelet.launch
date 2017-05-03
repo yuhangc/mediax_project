@@ -23,7 +23,7 @@
 	  <param name="marker_size" value="0.204"/>
 	  <param name="filter_mode" value="low_pass"/>
 	  <remap from="/cam_tracker/inside_out_tracker/image" to="/cam_tracker/image_raw"/>
-	  <remap from="/cam_tracker/tracking/pose2d" to="/tracking/human_pose2d"/>
+	  <remap from="/cam_tracker/inside_out_tracker/pose2d" to="/tracking/human_pose2d"/>
     </node>
 
 	<!--node pkg="hri_planner" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">

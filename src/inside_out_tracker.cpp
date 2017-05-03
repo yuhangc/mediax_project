@@ -13,7 +13,7 @@ using std::cos;
 
 #define INCH2METER 0.0254
 #define DEG2RAD M_PI / 180.0
-// #define DEBUG_DRAW_MARKER
+#define DEBUG_DRAW_MARKER
 
 namespace inside_out_tracker {
 
@@ -53,6 +53,7 @@ namespace inside_out_tracker {
 
         // load map from data file
         this->load_map(map_file);
+        ROS_ERROR("33333333333333");
 
         // load filter data
         this->load_filter_param(filter_param_file);
@@ -89,6 +90,10 @@ namespace inside_out_tracker {
     void InsideOutTracker::load_map(const std::string file_name) {
         std::ifstream map_stream(file_name);
         json j;
+
+        if (!map_stream.is_open()) {
+            ROS_ERROR("cannot open file!!!!!");
+        }
 
         map_stream >> j;
 
@@ -135,6 +140,7 @@ namespace inside_out_tracker {
 
         this->map_markers.clear();
         for (int i = 0; i < num_boards; i++) {
+            ROS_ERROR("at loop %d", i);
             std::stringstream board_name_stream;
             board_name_stream << "board" << i;
             std::string board_name = board_name_stream.str();
@@ -526,8 +532,8 @@ namespace inside_out_tracker {
 
         // detect markers
         this->detect_markers();
-        std::cout << "say something" << std::endl;
-        ROS_ERROR("something");
+//        std::cout << "say something" << std::endl;
+//        ROS_ERROR("something");
 
         if (this->filter_mode == "low_pass" || this->m_flag_reset_filter) {
             // perform simple position update
