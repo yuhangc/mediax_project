@@ -66,8 +66,12 @@ class RobotSupervisor:
         self.cmd_vel_pub_.publish(self.cmd_vel_)
 
     def check_set_state(self):
+        """
+        Check if state is set to be different
+        :return: True if state changes, False otherwise
+        """
         if self.state_set_ is None or self.state_set_ == self.state_:
-            return
+            return False
 
         if self.state_set_ == "Idle":
             self.send_cmd_vel(0, 0)
@@ -81,10 +85,14 @@ class RobotSupervisor:
             self.state_ = "Teleop"
 
         self.state_set_ = None
+        return True
 
     def idle(self):
         # check for state commands
         self.check_set_state()
+
+        # send zero velocity command
+        self.send_cmd_vel(0, 0)
 
     def set_rand_move(self, flag_reset=False):
         rand_move_mode = np.random.randint(0, 3)
@@ -112,6 +120,7 @@ class RobotSupervisor:
         if t_state > self.rand_move_t_total:
             self.send_cmd_vel(0, 0)
             self.state_ = "Idle"
+            return
 
         # check for mode timer
         t_mode = rospy.get_time() - self.rand_move_t_start_mode_
