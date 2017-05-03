@@ -2,7 +2,7 @@
   <arg name="device_name" default="/dev/video0" />
 
   <group ns="cam_tracker">
-	<node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" />
+	<node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" output="screen"/>
 
 	<node pkg="nodelet" type="nodelet" name="camera_nodelet"
           args="load usb_cam/UsbCamNodelet camera_nodelet_manager" >

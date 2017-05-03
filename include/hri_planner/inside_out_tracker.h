@@ -85,6 +85,9 @@ private:
     Eigen::Matrix3d m_cov_odom;
     Eigen::Matrix3d m_cov_vision;
 
+    // pose changing threshold
+    double m_pose_change_thresh;
+
     // low_pass filter velocity filter coefficient
     double m_vel_filter_alpha;
 

@@ -35,7 +35,7 @@ void GLTrackingDisplay::resizeGL(int w, int h)
     gluPerspective(45, (float)w/h, 0.01, 100.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0.0,3.0,10,0.0,3.0,0,0,1,0);
+    gluLookAt(0.0,3.5,10,0.0,3.5,0,0,1,0);
 }
 
 //===========================================================================

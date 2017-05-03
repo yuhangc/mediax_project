@@ -37,6 +37,7 @@ namespace inside_out_tracker {
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
         pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
         pnh.param<double>("velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
+        pnh.param<double>("pose_change_threshold", this->m_pose_change_thresh, 0.3);
 
         // initialize aruco trackers
         this->m_detector.setThresholdParams(7, 7);
@@ -53,7 +54,6 @@ namespace inside_out_tracker {
 
         // load map from data file
         this->load_map(map_file);
-        ROS_ERROR("33333333333333");
 
         // load filter data
         this->load_filter_param(filter_param_file);
@@ -140,7 +140,6 @@ namespace inside_out_tracker {
 
         this->map_markers.clear();
         for (int i = 0; i < num_boards; i++) {
-            ROS_ERROR("at loop %d", i);
             std::stringstream board_name_stream;
             board_name_stream << "board" << i;
             std::string board_name = board_name_stream.str();
@@ -450,7 +449,6 @@ namespace inside_out_tracker {
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
             this->m_cov -= Kt * Ht * this->m_cov;
         }
-        std::cout << "measurement update!" << std::endl;
     }
 
     // ============================================================================
@@ -458,7 +456,6 @@ namespace inside_out_tracker {
         // don't update if no markers detected
         if (this->m_markers.size() == 0)
             return;
-        std::cout << "shouldn't be heere!" << std::endl;
 
         // extract marker poses
         Eigen::Vector2d pos(0.0, 0.0);
@@ -467,8 +464,9 @@ namespace inside_out_tracker {
         for (int i = 0; i < this->m_markers.size(); i++) {
             // do nothing if the detected marker is not in the map
             int id = this->m_markers[i].id;
-            if (this->map_markers.count(this->m_markers[i].id) == 0)
+            if (this->map_markers.count(id) <= 0) {
                 continue;
+            }
 
             Eigen::Vector3d angle_axis;
             angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
@@ -481,7 +479,6 @@ namespace inside_out_tracker {
             // obtain roll angle of the camera based on marker pose
             double roll = this->map_markers[id].theta
                           - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
-            t_theta.push_back(wrap_to_pi(roll));
 
             // obtain position of the camera based on marker pose
             Eigen::Matrix2d t_rot_cam;
@@ -490,7 +487,23 @@ namespace inside_out_tracker {
             Eigen::Vector2d t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
             Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
                                       this->m_markers[i].Tvec.at<float>(2, 0));
-            pos += t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
+            Eigen::Vector2d t_pos = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
+
+            // check the difference to the current pose
+            double pose_diff = std::abs(m_mu[0] - t_pos[0]) + std::abs(m_mu[1] - t_pos[1]) +
+                    std::abs(wrap_to_pi(m_mu[2] - roll));
+
+            if (pose_diff < m_pose_change_thresh || m_flag_reset_filter) {
+                t_theta.push_back(wrap_to_pi(roll));
+                pos += t_pos;
+                std::cout << roll << "  ";
+            }
+        }
+        std::cout << std::endl;
+
+        // return if no valid markers detected
+        if (t_theta.size() <=0 ) {
+            return;
         }
 
         // calculate average position and orientation
@@ -538,7 +551,6 @@ namespace inside_out_tracker {
         if (this->filter_mode == "low_pass" || this->m_flag_reset_filter) {
             // perform simple position update
             this->simple_update();
-            std::cout << "updated" << std::endl;
         } else if (this->filter_mode == "kalman") {
             // perform measurement update
             this->measurement_update();
