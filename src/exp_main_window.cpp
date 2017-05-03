@@ -405,9 +405,15 @@ void ExpMainWindow::robot_odom_callback(const nav_msgs::Odometry::ConstPtr &odom
     if (flag_use_odom_as_pose_) {
         robot_pose_.x = odom_msg->pose.pose.position.x;
         robot_pose_.y = odom_msg->pose.pose.position.y;
+        robot_pose_.theta = get_yaw_quat(odom_msg->pose.pose.orientation);
 
         // send out the signal
         emit robot_pose_received(robot_pose_.x, robot_pose_.y, robot_pose_.theta);
+
+        // display new pose
+        ui->lcd_robot_pose_x->display(robot_pose_.x);
+        ui->lcd_robot_pose_y->display(robot_pose_.y);
+        ui->lcd_robot_pose_theta->display(robot_pose_.theta);
     }
 
     // display the velocity

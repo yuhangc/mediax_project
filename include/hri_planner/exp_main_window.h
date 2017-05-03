@@ -9,9 +9,12 @@
 #include <string>
 
 #include "ros/ros.h"
+#include "tf/transform_datatypes.h"
+
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Pose2D.h"
+#include "geometry_msgs/Quaternion.h"
 #include "std_msgs/Char.h"
 #include "std_msgs/Int8.h"
 #include "std_msgs/String.h"
@@ -41,6 +44,15 @@ public:
 
     // Initialization
     void Init();
+
+    // a function that gets yaw angle from quarternion
+    double get_yaw_quat(geometry_msgs::Quaternion quat) {
+        tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
+        double yaw, pitch, roll;
+
+        tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+        return yaw;
+    }
 
 private:
     Ui::ExpMainWindow *ui;
