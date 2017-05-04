@@ -35,6 +35,12 @@ inline double wrap_to_pi(double angle) {
     return angle;
 }
 
+// define marker types
+typedef enum {
+    marker_vertical,
+    marker_horizontal
+} MarkerType;
+
 // define 5x5 matrix and 5x1 vector
 typedef Eigen::Matrix<double, 5, 5> Matrix5d;
 typedef Eigen::Matrix<double, 5, 1> Vector5d;
@@ -68,6 +74,7 @@ private:
 
     // marker map
     std::unordered_map<int, geometry_msgs::Pose2D> map_markers;
+    std::unordered_map<int, MarkerType> type_markers;
 
     // detected body pose and velocity
     geometry_msgs::Pose2D m_body_pose;
@@ -115,6 +122,8 @@ private:
     bool m_flag_reset_filter;
     bool m_flag_use_acc;
 
+    bool m_flag_draw_markers;
+
     // poses for reset
     int m_num_sample_reset_max;
     std::vector<Eigen::Vector3d> m_pose_reset;
@@ -133,6 +142,7 @@ private:
 
     // update functions
     void detect_markers();
+    void get_pose_from_markers(std::vector<double> &th_meas, std::vector<Eigen::Vector2d> &pos_meas);
     void odom_process_update(const nav_msgs::OdometryConstPtr &odom_msg);
     void imu_process_update(Eigen::Vector3d acc_meas, Eigen::Vector3d gyro_meas);
     void measurement_update();

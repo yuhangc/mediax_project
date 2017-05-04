@@ -3,6 +3,8 @@
   "num_boards": 2,
 
   "board0": {
+    "type": "vertical",
+
     "x": -20, "y": 72.0,
     "theta": 0.0,
     "units": ["inch", "deg"],
@@ -16,7 +18,9 @@
   },
 
   "board1": {
-    "x": 0.0, "y": 180.0,
+    "type": "horizontal",
+
+    "x": -20.0, "y": 100,
     "theta": 0.0,
     "units": ["inch", "deg"],
 

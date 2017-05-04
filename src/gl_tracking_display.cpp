@@ -60,7 +60,7 @@ void GLTrackingDisplay::set_human_pose(double x_new, double y_new, double th_new
 {
     x_human_ = x_new;
     y_human_ = y_new;
-    th_human_ = th_new + 1.57;
+    th_human_ = th_new;
 }
 
 //===========================================================================

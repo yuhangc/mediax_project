@@ -33,6 +33,7 @@ namespace inside_out_tracker {
         pnh.param<std::string>("filter_mode", this->filter_mode, "low_pass");
         pnh.param<std::string>("odom_source", this->odom_source, "imu");
         pnh.param<bool>("use_accelerometer", this->m_flag_use_acc, false);
+        pnh.param<bool>("draw_markers", this->m_flag_draw_markers, false);
 
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
         pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
@@ -155,13 +156,27 @@ namespace inside_out_tracker {
             int h = j[board_name]["height"];
             int w = j[board_name]["width"];
 
+            ROS_ERROR("0000000000000");
+            std::string board_type = j[board_name]["type"];
+
+            ROS_ERROR("111111111111");
             for (int gy = 0; gy < h; gy++) {
                 for (int gx = 0; gx < w; gx++) {
                     geometry_msgs::Pose2D pose;
 
-                    pose.x = board_x + (double)gx * grid_width * cos(board_th);
-                    pose.y = board_y + (double)gx * grid_width * sin(board_th);
+                    if (board_type == "vertical") {
+                        pose.x = board_x + (double)gx * grid_width * cos(board_th);
+                        pose.y = board_y + (double)gx * grid_width * sin(board_th);
+                    }
+                    else {
+                        double xp = (double)gx * grid_width;
+                        double yp = -(double)gy * grid_height;
+                        pose.x = board_x + xp * cos(board_th) - yp * sin(board_th);
+                        pose.y = board_y + xp * sin(board_th) + yp * cos(board_th);
+                    }
                     pose.theta = board_th;
+
+                    ROS_ERROR("22222222222222");
 
                     // convert units if necessary
                     if (j[board_name]["units"][0] == "inch") {
@@ -174,6 +189,13 @@ namespace inside_out_tracker {
 
                     int marker_id = j[board_name]["marker_id_list"][gy * w + gx];
                     this->map_markers.insert({marker_id, pose});
+
+                    if (board_type == "vertical") {
+                        this->type_markers.insert({marker_id, marker_vertical});
+                    }
+                    else {
+                        this->type_markers.insert({marker_id, marker_horizontal});
+                    }
                 }
             }
         }
@@ -244,19 +266,19 @@ namespace inside_out_tracker {
         this->m_markers = this->m_detector.detect(this->m_image_input, this->m_cam_param,
                                                   (float)this->m_marker_size, true);
 
-#ifdef DEBUG_DRAW_MARKER
-        // draw marker boundaries
-        cv::Mat t_output_image;
-        this->m_image_input.copyTo(t_output_image);
+        if (m_flag_draw_markers) {
+            // draw marker boundaries
+            cv::Mat t_output_image;
+            this->m_image_input.copyTo(t_output_image);
 
-        for (int i = 0; i < this->m_markers.size(); i++) {
-            this->m_markers[i].draw(t_output_image, cv::Scalar(0, 0, 255), 1);
+            for (int i = 0; i < this->m_markers.size(); i++) {
+                this->m_markers[i].draw(t_output_image, cv::Scalar(0, 0, 255), 1);
+            }
+
+            // display the image
+            cv::imshow("test", t_output_image);
+            cv::waitKey(3);
         }
-
-        // display the image
-        cv::imshow("test", t_output_image);
-        cv::waitKey(3);
-#endif
     }
 
     // ============================================================================
@@ -382,6 +404,66 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
+    void InsideOutTracker::get_pose_from_markers(std::vector<double> &th_meas,
+                                                 std::vector<Eigen::Vector2d> &pos_meas) {
+        // reset the vectors
+        th_meas.clear();
+        pos_meas.clear();
+
+        // get position and orientation from the markers
+        for (int i = 0; i < this->m_markers.size(); i++) {
+            // do nothing if the detected marker is not in the map
+            int id = this->m_markers[i].id;
+            if (this->map_markers.count(id) <= 0) {
+                continue;
+            }
+
+            Eigen::Vector3d angle_axis;
+            angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
+                    this->m_markers[i].Rvec.at<float>(1, 0),
+                    this->m_markers[i].Rvec.at<float>(2, 0);
+            Eigen::Matrix3d rot_cam;
+            rot_cam = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
+            rot_cam = this->m_rot_cam_to_world * rot_cam;
+
+            double yaw;
+            if (this->type_markers[id] == marker_vertical) {
+                // obtain yaw angle of the camera based on marker pose
+                yaw = this->map_markers[id].theta
+                       - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
+            }
+            else {
+                // obtain yaw with x-axis
+                yaw = this->map_markers[id].theta
+                      - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
+            }
+
+            // obtain position of the camera based on marker pose
+            Eigen::Matrix2d t_rot_cam;
+            t_rot_cam << std::cos(yaw), -std::sin(yaw),
+                    std::sin(yaw), std::cos(yaw);
+            Eigen::Vector2d t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
+            Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
+                                             this->m_markers[i].Tvec.at<float>(2, 0));
+            Eigen::Vector2d t_pos = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
+
+            // check the difference to the current pose
+//            double pose_diff = std::abs(m_mu[0] - t_pos[0]) + std::abs(m_mu[1] - t_pos[1]) +
+//                    std::abs(wrap_to_pi(m_mu[2] - roll));
+
+//            if (pose_diff < m_pose_change_thresh || m_flag_reset_filter) {
+//                t_theta.push_back(wrap_to_pi(roll));
+//                pos += t_pos;
+//                std::cout << roll << "  ";
+//            }
+            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << yaw << std::endl;
+
+            th_meas.push_back(wrap_to_pi(yaw + M_PI_2));
+            pos_meas.push_back(t_pos);
+        }
+    }
+
+    // ============================================================================
     // measurement update
     void InsideOutTracker::measurement_update() {
         // don't update if no markers detected
@@ -390,64 +472,40 @@ namespace inside_out_tracker {
             return;
 
         Matrix5d cov_prev = this->m_cov;
-        for (int i = 0; i < n; i++) {
-            // do nothing if the detected marker is not in the map
-            int id = this->m_markers[i].id;
-            if (this->map_markers.count(id) == 0)
-                continue;
+        vector<Eigen::Vector2d> xy_meas;
+        vector<double> th_meas;
 
-            // extract the measured orientation and position
-            Eigen::Vector3d angle_axis;
-            Eigen::Vector2d xy_meas;
-            double th_meas;
-            angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
-                    this->m_markers[i].Rvec.at<float>(1, 0),
-                    this->m_markers[i].Rvec.at<float>(2, 0);
-            Eigen::Matrix3d rot_marker;
-            rot_marker = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
-            rot_marker = this->m_rot_cam_to_world * rot_marker;
+        this->get_pose_from_markers(th_meas, xy_meas);
+        if (th_meas.size() == 0) {
+            return;
+        }
 
-            th_meas = this->map_markers[id].theta
-                      - std::atan2(rot_marker(1, 0), rot_marker(0, 0));
-
-            // obtain position of the camera based on marker pose
-            Eigen::Matrix2d t_rot_cam;
-            t_rot_cam << std::cos(th_meas), -std::sin(th_meas),
-                    std::sin(th_meas), std::cos(th_meas);
-            Eigen::Vector2d t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
-            Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
-                                             this->m_markers[i].Tvec.at<float>(2, 0));
-
-            xy_meas = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
-            th_meas += 1.57;
-
+        for (int i = 0; i < th_meas.size(); i++) {
             // obtain the predicted measurements
             Eigen::Vector2d xy_pred(this->m_mu[0],
                                     this->m_mu[1]);
             double th_pred = this->m_mu[2];
 
-            std::cout << xy_meas[0] << "  " << xy_meas[1] << "  " << th_meas << std::endl;
-
             // calculate measurement Jacobian
             Eigen::Matrix<double, 3, 5> Ht;
             Eigen::Matrix3d Qt;
             Ht << 1.0, 0.0, 0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0, 0.0, 0.0,
-                  0.0, 0.0, 1.0, 0.0, 0.0;
+                    0.0, 1.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0, 0.0;
             Qt = this->m_cov_vision;
 
             // calculate Kalman gain
             Eigen::Matrix3d cov_meas;
             Eigen::Matrix<double, 5, 3> Kt;
-            cov_meas = Ht * cov_prev * Ht.transpose(); cov_meas += Qt;
-            Kt = cov_prev * Ht.transpose() * cov_meas.inverse();
+            cov_meas = Ht * this->m_cov * Ht.transpose(); cov_meas += Qt;
+            Kt = this->m_cov * Ht.transpose() * cov_meas.inverse();
 
 //            std::cout << Kt << std::endl;
 
             // update mean and covariance
-            Eigen::Vector3d meas_diff(xy_meas[0] - xy_pred[0],
-                                    xy_meas[1] - xy_pred[1],
-                                    wrap_to_pi(th_meas - th_pred));
+            Eigen::Vector3d meas_diff(xy_meas[i][0] - xy_pred[0],
+                                      xy_meas[i][1] - xy_pred[1],
+                                      wrap_to_pi(th_meas[i] - th_pred));
 //            std::cout << mu_diff << std::endl;
             this->m_mu += Kt * meas_diff;
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
@@ -464,65 +522,23 @@ namespace inside_out_tracker {
 
         // extract marker poses
         Eigen::Vector2d pos(0.0, 0.0);
-        std::vector<double> t_theta;
+        vector<Eigen::Vector2d> xy_meas;
+        vector<double> th_meas;
 
-        for (int i = 0; i < this->m_markers.size(); i++) {
-            // do nothing if the detected marker is not in the map
-            int id = this->m_markers[i].id;
-            if (this->map_markers.count(id) <= 0) {
-                continue;
-            }
-
-            Eigen::Vector3d angle_axis;
-            angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
-                          this->m_markers[i].Rvec.at<float>(1, 0),
-                          this->m_markers[i].Rvec.at<float>(2, 0);
-            Eigen::Matrix3d rot_cam;
-            rot_cam = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
-            rot_cam = this->m_rot_cam_to_world * rot_cam;
-
-            // obtain roll angle of the camera based on marker pose
-            double roll = this->map_markers[id].theta
-                          - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
-
-            // obtain position of the camera based on marker pose
-            Eigen::Matrix2d t_rot_cam;
-            t_rot_cam << std::cos(roll), -std::sin(roll),
-                         std::sin(roll), std::cos(roll);
-            Eigen::Vector2d t_pos_marker_world(this->map_markers[id].x, this->map_markers[id].y);
-            Eigen::Vector2d t_pos_marker_cam(this->m_markers[i].Tvec.at<float>(0, 0),
-                                      this->m_markers[i].Tvec.at<float>(2, 0));
-            Eigen::Vector2d t_pos = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
-
-            // check the difference to the current pose
-//            double pose_diff = std::abs(m_mu[0] - t_pos[0]) + std::abs(m_mu[1] - t_pos[1]) +
-//                    std::abs(wrap_to_pi(m_mu[2] - roll));
-
-//            if (pose_diff < m_pose_change_thresh || m_flag_reset_filter) {
-//                t_theta.push_back(wrap_to_pi(roll));
-//                pos += t_pos;
-//                std::cout << roll << "  ";
-//            }
-            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << roll << std::endl;
-
-            t_theta.push_back(wrap_to_pi(roll));
-            pos += t_pos;
-        }
-//        std::cout << std::endl;
-
-        // return if no valid markers detected
-        if (t_theta.size() <=0 ) {
+        this->get_pose_from_markers(th_meas, xy_meas);
+        if (th_meas.size() == 0) {
             return;
         }
 
         // calculate average position and orientation
         double th, dth = 0.0;
-        for (int i = 1; i < t_theta.size(); i++) {
-            dth += wrap_to_pi(t_theta[i] - t_theta[0]);
+        for (int i = 1; i < th_meas.size(); i++) {
+            dth += wrap_to_pi(th_meas[i] - th_meas[0]);
+            pos += xy_meas[i];
         }
 
-        pos /= t_theta.size();
-        th = wrap_to_pi(t_theta[0] + dth / t_theta.size());
+        pos /= th_meas.size();
+        th = wrap_to_pi(th_meas[0] + dth / th_meas.size());
 
         if (this->m_flag_reset_filter) {
             Eigen::Vector3d t_pose(pos[0], pos[1], th);
@@ -545,7 +561,6 @@ namespace inside_out_tracker {
         this->m_body_pose.theta = this->m_mu[2];
 
         this->m_pose_pub.publish(this->m_body_pose);
-//        std::cout << this->m_body_pose;
     }
 
     // ============================================================================

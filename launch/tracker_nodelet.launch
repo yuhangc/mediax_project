@@ -1,5 +1,6 @@
 <launch>
   <arg name="device_name" default="/dev/video0" />
+  <arg name="draw_markers" default="false" />
 
   <group ns="cam_tracker">
 	<node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" output="screen"/>
@@ -18,9 +19,10 @@
 
 	<node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet camera_nodelet_manager" output="screen">
 	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/board_test.json"/>
 	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
+	  <param name="draw_markers" value="$(arg draw_markers)"/>
 	  <param name="filter_mode" value="low_pass"/>
 	  <remap from="/cam_tracker/inside_out_tracker/image" to="/cam_tracker/image_raw"/>
 	  <remap from="/cam_tracker/inside_out_tracker/pose2d" to="/tracking/human_pose2d"/>
