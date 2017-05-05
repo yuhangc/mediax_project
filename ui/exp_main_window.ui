@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>914</width>
-    <height>712</height>
+    <width>1005</width>
+    <height>815</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -315,8 +315,8 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>416</width>
-             <height>50</height>
+             <width>461</width>
+             <height>69</height>
             </size>
            </property>
           </spacer>
@@ -419,7 +419,7 @@ p, li { white-space: pre-wrap; }
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QPushButton" name="button_set_saving_dir">
+            <widget class="QPushButton" name="pushButton">
              <property name="text">
               <string>Data Saving Dir...</string>
              </property>
@@ -490,7 +490,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>914</width>
+     <width>1005</width>
      <height>22</height>
     </rect>
    </property>

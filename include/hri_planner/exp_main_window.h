@@ -27,6 +27,7 @@ using json = nlohmann::json;
 typedef enum {
     exp_state_idle,
     exp_state_training,
+    exp_state_pre_experiment,
     exp_state_experimenting
 } exp_state_type;
 
@@ -95,6 +96,9 @@ private:
 
     exp_state_type exp_state_;
 
+    // target poses
+    std::vector<double> y_targets_;
+
     // for publishing
     std_msgs::String set_robot_state_;
     std_msgs::String haptic_msg_;
@@ -104,11 +108,14 @@ private:
     std::ofstream data_stream_;
 
     bool flag_start_data_saving_;
-    double t_start_data_saving_;
 
     // pre-set file loading and saving locations
     std::string dir_loading_pre_set_;
     std::string dir_saving_pre_set_;
+
+    // timer for sending robot action
+    double t_exp_start_;
+    double t_robot_action_delay_;
 
     // flags
     bool flag_protocol_loaded_;
@@ -120,6 +127,8 @@ private:
     bool flag_stop_exp_requested_;
 
     bool flag_exp_training_;
+
+    bool flag_robot_action_sent_;
 
     // load experiment protocols
     void load_protocol(std::string file_name);
@@ -136,8 +145,10 @@ private:
     void start_data_saving();
     void stop_data_saving();
 
-    // send desired action to robot
+    // send desired robot action and haptic cue
+    void set_robot_action_delay();
     void send_robot_action();
+    void send_haptic_cue();
 
     // update UI components
     void set_cond_trial_text();

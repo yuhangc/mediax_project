@@ -156,10 +156,8 @@ namespace inside_out_tracker {
             int h = j[board_name]["height"];
             int w = j[board_name]["width"];
 
-            ROS_ERROR("0000000000000");
             std::string board_type = j[board_name]["type"];
 
-            ROS_ERROR("111111111111");
             for (int gy = 0; gy < h; gy++) {
                 for (int gx = 0; gx < w; gx++) {
                     geometry_msgs::Pose2D pose;
@@ -175,8 +173,6 @@ namespace inside_out_tracker {
                         pose.y = board_y + xp * sin(board_th) + yp * cos(board_th);
                     }
                     pose.theta = board_th;
-
-                    ROS_ERROR("22222222222222");
 
                     // convert units if necessary
                     if (j[board_name]["units"][0] == "inch") {
@@ -456,7 +452,7 @@ namespace inside_out_tracker {
 //                pos += t_pos;
 //                std::cout << roll << "  ";
 //            }
-            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << yaw << std::endl;
+//            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << yaw << std::endl;
 
             th_meas.push_back(wrap_to_pi(yaw + M_PI_2));
             pos_meas.push_back(t_pos);
@@ -511,7 +507,7 @@ namespace inside_out_tracker {
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
             this->m_cov -= Kt * Ht * this->m_cov;
         }
-        std::cout << "measurement update!" << std::endl;
+//        std::cout << "measurement update!" << std::endl;
     }
 
     // ============================================================================
@@ -539,6 +535,7 @@ namespace inside_out_tracker {
 
         pos /= th_meas.size();
         th = wrap_to_pi(th_meas[0] + dth / th_meas.size());
+        std::cout << pos[0] << ",  " << pos[1] << ",  " << th << std::endl;
 
         if (this->m_flag_reset_filter) {
             Eigen::Vector3d t_pose(pos[0], pos[1], th);
@@ -576,7 +573,6 @@ namespace inside_out_tracker {
 
         // detect markers
         this->detect_markers();
-//        std::cout << "say something" << std::endl;
 //        ROS_ERROR("something");
 
         if (this->filter_mode == "low_pass" || this->m_flag_reset_filter) {

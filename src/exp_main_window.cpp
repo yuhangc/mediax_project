@@ -1,5 +1,7 @@
 #include <QFileDialog>
 
+#include <random>
+
 #include "exp_main_window.h"
 #include "ui_exp_main_window.h"
 
@@ -113,33 +115,34 @@ void ExpMainWindow::load_protocol_exp1(json &proto_parser)
 {
     config_num_ = proto_parser["configuration"];
 
-    if (config_num_ == 0) {
-        // the configuration where the robot stays still
-        num_cond_total_ = proto_parser["num_conditions"];
+    // get the target positions
+    y_targets_.clear();
+    y_targets_.push_back(proto_parser["human_target0"]["y"]);
+    y_targets_.push_back(proto_parser["human_target1"]["y"]);
 
-        num_trial_total_.clear();
-        num_training_total_.clear();
-        for (int i = 0; i < num_cond_total_; i++) {
-            num_trial_total_.push_back(proto_parser["num_trials"][i]);
-            num_training_total_.push_back(proto_parser["num_trainings"][i]);
-        }
+    // load the trial conditions
+    num_cond_total_ = proto_parser["num_conditions"];
 
-        robot_action_list_.clear();
-        for (int i = 0; i < num_cond_total_; i++) {
-            std::vector<int> action_list;
-            int trials_total = num_training_total_[i] + num_trial_total_[i];
-            for (int j = 0; j < trials_total; j++) {
-                std::stringstream field_name;
-                field_name << "condition_" << i;
-
-                action_list.push_back(proto_parser["robot_actions"][field_name.str()][j]);
-            }
-            robot_action_list_.push_back(action_list);
-        }
+    num_trial_total_.clear();
+    num_training_total_.clear();
+    for (int i = 0; i < num_cond_total_; i++) {
+        num_trial_total_.push_back(proto_parser["num_trials"][i]);
+        num_training_total_.push_back(proto_parser["num_trainings"][i]);
     }
-    else if (config_num_ == 1){
-        // to be implemented
+
+    robot_action_list_.clear();
+    for (int i = 0; i < num_cond_total_; i++) {
+        std::vector<int> action_list;
+        int trials_total = num_training_total_[i] + num_trial_total_[i];
+        for (int j = 0; j < trials_total; j++) {
+            std::stringstream field_name;
+            field_name << "condition_" << i;
+
+            action_list.push_back(proto_parser["robot_actions"][field_name.str()][j]);
+        }
+        robot_action_list_.push_back(action_list);
     }
+
 }
 
 //===========================================================================
@@ -222,6 +225,9 @@ void ExpMainWindow::exp_state_update()
 //===========================================================================
 void ExpMainWindow::state_machine_exp1_config0()
 {
+    // obtain time
+    double t_exp = ros::Time::now().toSec() - t_exp_start_;
+
     switch (exp_state_) {
     case exp_state_idle:
         // check for condition and trial number
@@ -231,14 +237,22 @@ void ExpMainWindow::state_machine_exp1_config0()
 
         // check for start experiment flag
         if (flag_start_exp_requested_) {
+            set_robot_action_delay();
+            send_haptic_cue();
             start_data_saving();
-            send_robot_action();
+
             exp_state_ = exp_state_experimenting;
             ui->browser_sys_message->append("Started experiment!");
         }
         break;
     case exp_state_experimenting:
         save_exp_data();
+
+        // check for send robot action
+        if (!flag_robot_action_sent_ && t_exp >= t_robot_action_delay_) {
+            send_robot_action();
+            flag_robot_action_sent_ = true;
+        }
 
         // check for stop experiment flag
         if (flag_stop_exp_requested_) {
@@ -281,13 +295,112 @@ void ExpMainWindow::state_machine_exp1_config0()
 //===========================================================================
 void ExpMainWindow::state_machine_exp1_config1()
 {
-    // TODO: to be implemented
+    int target = trial_num_ & 0x01;
+    bool target_reached = ((target == 0) && (human_pose_.y > y_targets_[1])) ||
+            ((target == 1) && (human_pose_.y < y_targets_[0]));
+
+    switch (exp_state_) {
+    case exp_state_idle:
+        // check for condition and trial number
+        if (cond_num_ >= num_cond_total_ || trial_num_ >= num_trial_total_[cond_num_]) {
+            return;
+        }
+
+        // check for start experiment flag
+        if (flag_start_exp_requested_) {
+            // set robot to teleoperation
+            send_robot_action();
+
+            // reset trial number
+            trial_num_ = 0;
+            flag_exp_training_ = true;
+
+            exp_state_ = exp_state_pre_experiment;
+            ui->browser_sys_message->append("Started experiment!");
+        }
+        break;
+    case exp_state_pre_experiment:
+        // check the position of the human
+        if (((target == 0) && (human_pose_.y > y_targets_[0])) ||
+                ((target == 1) && (human_pose_.y < y_targets_[1]))) {
+            // start data saving
+            start_data_saving();
+
+            // start the trial
+            exp_state_ = exp_state_experimenting;
+            ui->browser_sys_message->append("Started trial!");
+        }
+        break;
+    case exp_state_experimenting:
+        save_exp_data();
+
+        // check for goal reached or stop experiment
+        if (target_reached || flag_stop_exp_requested_) {
+            stop_data_saving();
+
+            // update trial number and condition number
+            trial_num_ ++;
+            if (flag_exp_training_) {
+                if (trial_num_ >= num_training_total_[cond_num_]) {
+                    trial_num_ = 0;
+                    flag_exp_training_ = false;
+                    ui->browser_sys_message->append("Training ended!");
+                }
+            }
+            else {
+                if (trial_num_ >= num_trial_total_[cond_num_]) {
+                    cond_num_ ++;
+                    exp_state_ = exp_state_idle;
+                    ui->browser_sys_message->append("Condition ended!");
+                    break;
+                }
+            }
+
+            set_cond_trial_text();
+
+            exp_state_ = exp_state_pre_experiment;
+            ui->browser_sys_message->append("Trial ended!");
+        }
+        break;
+    default:
+        ui->browser_sys_message->append("Unknown experiment state!");
+        break;
+    }
+
+    // reset some of the flags to prevent unwanted state switching
+    flag_start_exp_requested_ = false;
+    flag_stop_exp_requested_ = false;
 }
 
 //===========================================================================
 void ExpMainWindow::state_machine_exp2()
 {
     // to be implemented
+}
+
+//===========================================================================
+void ExpMainWindow::set_robot_action_delay()
+{
+    int action_id = trial_num_;
+    if (flag_exp_training_) {
+        action_id += num_training_total_[cond_num_];
+    }
+
+    if (robot_action_list_[cond_num_][action_id] == 1) {
+        // delay randomly between 1 ~ 2 seconds
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> dis(1, 2);
+
+        t_robot_action_delay_ = dis(gen);
+        t_exp_start_ = ros::Time::now().toSec();
+        flag_robot_action_sent_ = false;
+    }
+    else if (robot_action_list_[cond_num_][action_id] == 0) {
+        // set to idle
+        set_robot_state_.data = "Idle";
+        set_robot_state_pub_.publish(set_robot_state_);
+    }
 }
 
 //===========================================================================
@@ -298,28 +411,37 @@ void ExpMainWindow::send_robot_action()
         action_id += num_training_total_[cond_num_];
     }
 
-    if (robot_action_list_[cond_num_][action_id] == 0) {
-        // set to idle
-        set_robot_state_.data = "Idle";
-        set_robot_state_pub_.publish(set_robot_state_);
-
-        // also send haptic message
-        if (cond_num_ == 2) {
-            haptic_msg_.data = "Attract";
-            haptic_control_pub_.publish(haptic_msg_);
-        }
-    }
-    else if (robot_action_list_[cond_num_][action_id] == 1) {
+    if (robot_action_list_[cond_num_][action_id] == 1) {
         // set to random move
         set_robot_state_.data = "RandMove";
         set_robot_state_pub_.publish(set_robot_state_);
+    }
+    else if (robot_action_list_[cond_num_][action_id] == 0) {
+        // set to idle
+        set_robot_state_.data = "Idle";
+        set_robot_state_pub_.publish(set_robot_state_);
+    }
+}
 
-        // also send haptic message
-        if (cond_num_ == 2) {
+//===========================================================================
+void ExpMainWindow::send_haptic_cue()
+{
+    int action_id = trial_num_;
+    if (flag_exp_training_) {
+        action_id += num_training_total_[cond_num_];
+    }
+
+    if (cond_num_ == 2) {
+        if (robot_action_list_[cond_num_][action_id] == 0) {
+            haptic_msg_.data = "Attract";
+            haptic_control_pub_.publish(haptic_msg_);
+        }
+        else if (robot_action_list_[cond_num_][action_id] == 1) {
             haptic_msg_.data = "Repel";
             haptic_control_pub_.publish(haptic_msg_);
         }
     }
+
 }
 
 //===========================================================================

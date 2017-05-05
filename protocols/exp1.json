@@ -2,13 +2,13 @@
   "experiment_name": "exp1",
   "configuration": 0,
 
-  "human_start_pose": {
-    "x": 0.0, "y": 1.0,
+  "human_target0": {
+    "x": 0.0, "y": 0.5,
     "theta": 0.0,
     "units": ["meter", "deg"]
   },
-  "human_goal_pose": {
-    "x": 0.0, "y": 1.0,
+  "human_target1": {
+    "x": 0.0, "y": 6.5,
     "theta": 0.0,
     "units": ["meter", "deg"]
   },
