@@ -89,7 +89,6 @@ private:
     // Kalman filter parameters
     Eigen::Matrix3d m_cov_acc;
     Eigen::Matrix3d m_cov_gyro;
-    Eigen::Matrix3d m_cov_odom;
     Eigen::Matrix3d m_cov_vision;
 
     // pose changing threshold
@@ -152,6 +151,8 @@ private:
     void simple_update();
 
     void reset_filter();
+
+    double get_measurement_cov_multiplier(Eigen::Vector2d &pos_meas);
 };
 
 } // namespace

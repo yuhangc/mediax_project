@@ -462,6 +462,30 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
+    double InsideOutTracker::get_measurement_cov_multiplier(Eigen::Vector2d &pos_meas) {
+        // calculate distance
+        double dist = pos_meas.norm();
+
+        // the larger the distance, the larger the multiplier
+        // FIXME: hardcode for now
+        if (dist < 2.0) {
+            return 1.0;
+        }
+        else if (dist < 3.0) {
+            return 1.5;
+        }
+        else if (dist < 4.0) {
+            return 2.0;
+        }
+        else if (dist < 5.0) {
+            return 3.0;
+        }
+        else {
+            return 5.0;
+        }
+    }
+
+    // ============================================================================
     // measurement update
     void InsideOutTracker::measurement_update() {
         // don't update if no markers detected
@@ -490,7 +514,7 @@ namespace inside_out_tracker {
             Ht << 1.0, 0.0, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0, 0.0;
-            Qt = this->m_cov_vision;
+            Qt = this->get_measurement_cov_multiplier(xy_meas[i]) * this->m_cov_vision;
 
             // calculate Kalman gain
             Eigen::Matrix3d cov_meas;
@@ -504,7 +528,7 @@ namespace inside_out_tracker {
             Eigen::Vector3d meas_diff(xy_meas[i][0] - xy_pred[0],
                                       xy_meas[i][1] - xy_pred[1],
                                       wrap_to_pi(th_meas[i] - th_pred));
-//            std::cout << mu_diff << std::endl;
+
             this->m_mu += Kt * meas_diff;
             this->m_mu[2] = wrap_to_pi(this->m_mu[2]);
             this->m_cov -= Kt * Ht * this->m_cov;

@@ -1,0 +1,1 @@
+{"num_trainings": [6, 6, 6], "num_trials": [6, 10, 10], "num_conditions": 3, "robot_actions": {"condition_1": [1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0], "condition_0": [0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1], "condition_2": [1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1]}}
