@@ -36,7 +36,7 @@ namespace inside_out_tracker {
         pnh.param<bool>("draw_markers", this->m_flag_draw_markers, false);
 
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
-        pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 3);
+        pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
         pnh.param<int>("num_frames_skip", this->m_num_frames_skip, 0);
         pnh.param<double>("velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
         pnh.param<double>("pose_change_threshold", this->m_pose_change_thresh, 0.3);
@@ -515,6 +515,7 @@ namespace inside_out_tracker {
                     0.0, 1.0, 0.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0, 0.0;
             Qt = this->get_measurement_cov_multiplier(xy_meas[i]) * this->m_cov_vision;
+//            Qt = this->m_cov_vision;
 
             // calculate Kalman gain
             Eigen::Matrix3d cov_meas;
@@ -627,7 +628,9 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
-        if (this->filter_mode == "kalman" && this->odom_source == "odom" && !this->m_flag_reset_filter)
+        if (this->filter_mode == "kalman" && this->odom_source == "odom" && (!this->m_flag_reset_filter))
+//            ROS_ERROR("odomodom.........");
+            std::cout << "odom update" << std::endl;
             this->odom_process_update(odom_msg);
     }
 

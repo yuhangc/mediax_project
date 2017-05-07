@@ -6,13 +6,14 @@
 
   <node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet $(arg camera)/$(arg camera)_nodelet_manager" output="screen">
 	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/kinect_rgb.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/board_test.json"/>
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
 	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="filter_mode" value="kalman"/>
       <param name="odom_source" value="odom"/>
-	  <param name="num_frames_skip" value="1"/>
-	  <remap from="/$(arg camera)/inside_out_tracker/image" to="/$(arg camera)/rgb/image_raw"/>
+	  <param name="num_frames_skip" value="2"/>
+	  <param name="image_scale" value="1.0"/>
+	  <remap from="/$(arg camera)/inside_out_tracker/image" to="/$(arg camera)/rgb/image_mono"/>
 	  <remap from="/$(arg camera)/inside_out_tracker/pose2d" to="/tracking/robot_pose2d"/>
 	  <remap from="/$(arg camera)/inside_out_tracker/odom" to="/odom"/>
   </node>
