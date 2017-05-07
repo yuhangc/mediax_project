@@ -101,6 +101,8 @@ include_directories(${aruco_INCLUDE_DIRS})
 ## specify openCV package and directories
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
+message("=========================================")
+message("${OpenCV_INCLUDE_DIRS}")
 
 ## specify Eigen3 package and directories
 find_package(Eigen3 REQUIRED)

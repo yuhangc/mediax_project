@@ -114,6 +114,9 @@ private:
     // image from camera
     cv::Mat m_image_input;
 
+    // scale for the image
+    double m_image_scale;
+
     // parameters for filter settings
     std::string filter_mode;
     std::string odom_source;

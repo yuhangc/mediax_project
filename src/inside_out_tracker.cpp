@@ -36,10 +36,12 @@ namespace inside_out_tracker {
         pnh.param<bool>("draw_markers", this->m_flag_draw_markers, false);
 
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
-        pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
+        pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 3);
         pnh.param<int>("num_frames_skip", this->m_num_frames_skip, 0);
         pnh.param<double>("velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
         pnh.param<double>("pose_change_threshold", this->m_pose_change_thresh, 0.3);
+
+        pnh.param<double>("image_scale", this->m_image_scale, 0.5);
 
         // initialize aruco trackers
         this->m_detector.setThresholdParams(7, 7);
@@ -517,7 +519,7 @@ namespace inside_out_tracker {
             return;
 
         // extract marker poses
-        Eigen::Vector2d pos(0.0, 0.0);
+        Eigen::Vector2d pos;
         vector<Eigen::Vector2d> xy_meas;
         vector<double> th_meas;
 
@@ -528,6 +530,7 @@ namespace inside_out_tracker {
 
         // calculate average position and orientation
         double th, dth = 0.0;
+        pos = xy_meas[0];
         for (int i = 1; i < th_meas.size(); i++) {
             dth += wrap_to_pi(th_meas[i] - th_meas[0]);
             pos += xy_meas[i];
@@ -535,7 +538,7 @@ namespace inside_out_tracker {
 
         pos /= th_meas.size();
         th = wrap_to_pi(th_meas[0] + dth / th_meas.size());
-        std::cout << pos[0] << ",  " << pos[1] << ",  " << th << std::endl;
+//        std::cout << pos[0] << ",  " << pos[1] << ",  " << th << std::endl;
 
         if (this->m_flag_reset_filter) {
             Eigen::Vector3d t_pose(pos[0], pos[1], th);
@@ -569,7 +572,9 @@ namespace inside_out_tracker {
         }
 
         m_num_frames_skipped = 0;
-        this->m_image_input = cv_bridge::toCvCopy(image_msg, "bgr8")->image;
+        cv::resize(cv_bridge::toCvShare(image_msg, "mono8")->image, this->m_image_input,
+                    cv::Size(), this->m_image_scale, this->m_image_scale);
+//        this->m_image_input = cv_bridge::toCvCopy(image_msg, "mono8")->image;
 
         // detect markers
         this->detect_markers();

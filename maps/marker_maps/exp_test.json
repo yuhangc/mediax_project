@@ -1,6 +1,6 @@
 {
   "type": "board_map",
-  "num_boards": 4,
+  "num_boards": 5,
 
   "board0": {
     "type": "vertical",
@@ -60,5 +60,20 @@
     "grid_width": 11.125,
 
     "marker_id_list": [160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171]
+  },
+
+  "board4": {
+    "type": "vertical",
+
+    "x": 19.25, "y": 253.75,
+    "theta": -40.0,
+    "units": ["inch", "deg"],
+
+    "height": 3,
+    "width": 4,
+    "grid_height": 8.5,
+    "grid_width": 11.125,
+
+    "marker_id_list": [180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191]
   }
 }
