@@ -309,7 +309,8 @@ void ExpMainWindow::state_machine_exp1_config1()
         // check for start experiment flag
         if (flag_start_exp_requested_) {
             // set robot to teleoperation
-            send_robot_action();
+            set_robot_state_.data = "Teleop";
+            set_robot_state_pub_.publish(set_robot_state_);
 
             // reset trial number
             trial_num_ = 0;
