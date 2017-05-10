@@ -1,0 +1,41 @@
+<launch>
+  <arg name="camera_name" default="camera" />
+  <arg name="camera_serial" default="0" />
+  <arg name="calibrated" default="0" />
+
+  <group ns="$(arg camera_name)">
+    <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" />
+
+    <node pkg="nodelet" type="nodelet" name="camera_nodelet"
+          args="load pointgrey_camera_driver/PointGreyCameraNodelet camera_nodelet_manager" >
+      <param name="frame_id" value="camera" />
+      <param name="serial" value="$(arg camera_serial)" />
+
+      <!-- When unspecified, the driver will use the default framerate as given by the
+           camera itself. Use this parameter to override that value for cameras capable of
+           other framerates. -->
+      <param name="frame_rate" value="60" />
+
+      <!-- Use the camera_calibration package to create this file -->
+      <param name="camera_info_url" if="$(arg calibrated)"
+             value="file://$(env HOME)/.ros/camera_info/$(arg camera_serial).yaml" />
+    </node>
+
+	<node pkg="nodelet" type="nodelet" name="image_proc_debayer"
+          args="load image_proc/debayer camera_nodelet_manager">
+    </node>
+  </group>
+
+  <node pkg="hri_planner" type="tracker_calibration" name="camera_calibration" output="screen">
+	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/pointgrey_flea3_half.yml"/>
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
+	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
+	  <param name="marker_size" value="0.204"/>
+	  <param name="draw_markers" value="true"/>
+	  <param name="filter_mode" value="low_pass"/>
+ 	  <param name="num_frames_skip" value="5"/>
+	  <param name="image_scale" value="0.5"/>
+	  <param name="num_sample_calibration" value="1000"/>
+	  <remap from="/inside_out_tracker/image" to="/$(arg camera_name)/image_mono"/>
+   </node>
+</launch>

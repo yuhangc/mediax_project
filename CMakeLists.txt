@@ -135,13 +135,18 @@ set(INSIDE_OUT_TRACKER_HEADERS
 )
 
 # set source, header for the aruco vision tracking node
-set(HUMAN_LOCALIZATION_SOURCES
-    src/nodes/human_localization.cpp
+set(TRACKER_NODE_SOURCES
+    src/nodes/tracker_node.cpp
 )
 
 # set source, header for the aruco vision tracking node
 set(TRACKER_NODELET_SOURCES
     src/nodelets/tracker_nodelet.cpp
+)
+
+# set source, header for the tracker calibration
+set(TRACKER_CALIBRATION_SOURCES
+    src/nodes/tracker_calibration.cpp
 )
 
 # set source, header for the imu manager
@@ -190,8 +195,11 @@ add_library(tracker_nodelet ${TRACKER_NODELET_SOURCES})
 target_link_libraries(tracker_nodelet ${catkin_LIBRARIES} inside_out_tracker)
 
 ## Declare C++ executables
-add_executable(human_localization ${HUMAN_LOCALIZATION_SOURCES})
-target_link_libraries(human_localization ${catkin_LIBRARIES} inside_out_tracker)
+add_executable(tracker_node ${TRACKER_NODE_SOURCES})
+target_link_libraries(tracker_node ${catkin_LIBRARIES} inside_out_tracker)
+
+add_executable(tracker_calibration ${TRACKER_CALIBRATION_SOURCES})
+target_link_libraries(tracker_calibration inside_out_tracker ${catkin_LIBRARIES})
 
 add_executable(imu_manager_node ${IMU_MANAGER_SOURCES} ${IMU_MANAGER_HEADERS})
 target_link_libraries(imu_manager_node ${catkin_LIBRARIES})

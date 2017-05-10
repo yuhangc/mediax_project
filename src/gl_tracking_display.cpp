@@ -68,7 +68,7 @@ void GLTrackingDisplay::draw_human()
 {
     // calculate the vertices
     std::vector<std::pair<double, double>> vertices;
-    this->calc_vertices_triangle(x_human_, y_human_, th_human_, 0.5, 0.3, vertices);
+    this->calc_vertices_triangle(x_human_, y_human_, th_human_, 0.5, 0.4, vertices);
 
     glBegin(GL_TRIANGLES);
         glColor3f(1.0, 0.0, 0.0);
@@ -83,7 +83,7 @@ void GLTrackingDisplay::draw_robot()
 {
     // calculate the vertices
     std::vector<std::pair<double, double>> vertices;
-    this->calc_vertices_triangle(x_robot_, y_robot_, th_robot_, 1.0, 0.2, vertices);
+    this->calc_vertices_triangle(x_robot_, y_robot_, th_robot_, 0.75, 0.3, vertices);
 
     glBegin(GL_TRIANGLES);
         glColor3f(0.0, 0.0, 1.0);

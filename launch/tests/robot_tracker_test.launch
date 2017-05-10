@@ -10,7 +10,7 @@
 	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="filter_mode" value="kalman"/>
-      <param name="odom_source" value="odom"/>
+      <param name="odom_source" value="odometer"/>
 	  <param name="num_frames_skip" value="2"/>
 	  <param name="image_scale" value="1.0"/>
 	  <remap from="/$(arg camera)/inside_out_tracker/image" to="/$(arg camera)/rgb/image_mono"/>

@@ -41,10 +41,6 @@ typedef enum {
     marker_horizontal
 } MarkerType;
 
-// define 5x5 matrix and 5x1 vector
-typedef Eigen::Matrix<double, 5, 5> Matrix5d;
-typedef Eigen::Matrix<double, 5, 1> Vector5d;
-
 class InsideOutTracker {
 public:
     // constructor
@@ -53,13 +49,15 @@ public:
     // destructor
     ~InsideOutTracker();
 
+    // calibrate the covariance of the aruco detection
+    void run_calibration_aruco();
+
 private:
     // node handler
     ros::NodeHandle nh_;
 
     // subscriber and publisher
     ros::Subscriber m_camera_sub;
-    ros::Subscriber m_imu_sub;
     ros::Subscriber m_odom_sub;
     ros::Subscriber m_reset_sub;
     ros::Publisher m_pose_pub;
@@ -70,7 +68,6 @@ private:
 
     // camera to world rotation transformation
     Eigen::Matrix3d m_rot_cam_to_world;
-    Eigen::Matrix3d m_rot_imu_to_world;
 
     // marker map
     std::unordered_map<int, geometry_msgs::Pose2D> map_markers;
@@ -78,18 +75,16 @@ private:
 
     // detected body pose and velocity
     geometry_msgs::Pose2D m_body_pose;
-    geometry_msgs::Pose2D m_body_pose_last;
-    geometry_msgs::Vector3 m_body_vel;
-    geometry_msgs::Vector3 m_body_vel_last;
 
     // body pose and covariance for Kalman Filtering
-    Vector5d m_mu;
-    Matrix5d m_cov;
+    Eigen::Vector3d m_mu;
+    Eigen::Matrix3d m_cov;
+    double m_vel_linear;
+    double m_vel_angular;
 
     // Kalman filter parameters
-    Eigen::Matrix3d m_cov_acc;
-    Eigen::Matrix3d m_cov_gyro;
-    Eigen::Matrix3d m_cov_vision;
+    Eigen::Matrix3d m_cov_meas;
+    Eigen::MatrixXd m_cov_proc;
 
     // pose changing threshold
     double m_pose_change_thresh;
@@ -119,9 +114,11 @@ private:
     // parameters for filter settings
     std::string filter_mode;
     std::string odom_source;
+    std::string meas_source;
 
     // flag for resetting the filter
     bool m_flag_reset_filter;
+    bool m_flag_run_calibration_aruco;
     bool m_flag_use_acc;
 
     bool m_flag_draw_markers;
@@ -130,9 +127,12 @@ private:
     int m_num_sample_reset_max;
     std::vector<Eigen::Vector3d> m_pose_reset;
 
+    // for calibration
+    int m_num_sample_calibration;
+    std::vector<Eigen::Vector3d> m_pose_calibration;
+
     // callback functions
     void camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg);
-    void imu_callback(const std_msgs::Float32MultiArrayConstPtr &imu_msg);
     void odom_callback(const nav_msgs::OdometryConstPtr &odom_msg);
     void reset_callback(const std_msgs::BoolConstPtr &reset_msg);
 
@@ -144,15 +144,18 @@ private:
 
     // update functions
     void detect_markers();
-    void get_pose_from_markers(std::vector<double> &th_meas, std::vector<Eigen::Vector2d> &pos_meas);
-    void odom_process_update(const nav_msgs::OdometryConstPtr &odom_msg);
-    void imu_process_update(Eigen::Vector3d acc_meas, Eigen::Vector3d gyro_meas);
+    void get_pose_from_markers(std::vector<double> &th_meas, std::vector<Eigen::Vector2d> &pos_meas,
+                               std::vector<double> &dist_meas);
+    void odom_process_update(const double v, const double om);
+    void opt_flow_process_update(const double vx, const double vy, const double om);
     void measurement_update();
     void simple_update();
 
     void reset_filter();
 
-    double get_measurement_cov_multiplier(Eigen::Vector2d &pos_meas);
+    // calibrate the covariance of the aruco detection
+    double get_measurement_cov_multiplier(double dist, double v, double om);
+    void calibrate_cov_aruco();
 };
 
 } // namespace
