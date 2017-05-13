@@ -9,10 +9,6 @@ namespace serial_interface {
     // constructor
     SerialManager::SerialManager(ros::NodeHandle &nh, ros::NodeHandle &pnh) : nh_(nh)
     {
-        // initialize publisher
-
-        this->setup_publisher();
-
         std::string device_port;
         pnh.param<std::string>("device_port", device_port, "/dev/ttyACM0");
 
@@ -30,6 +26,12 @@ namespace serial_interface {
     SerialManager::~SerialManager()
     {
         delete this->arduino;
+    }
+
+    // ============================================================================
+    void SerialManager::init() {
+        // initialize publisher
+        this->setup_publisher();
     }
 
     // ============================================================================

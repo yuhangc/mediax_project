@@ -67,10 +67,13 @@ namespace inside_out_tracker {
 
         // initialize publishers and subscribers
         this->m_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("inside_out_tracker/pose2d", 1);
-//        this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
-//                                                                     &InsideOutTracker::camera_rgb_callback, this);
+        this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
+                                                                     &InsideOutTracker::camera_rgb_callback, this);
         this->m_odom_sub = this->nh_.subscribe<nav_msgs::Odometry>("inside_out_tracker/odom", 1,
                                                                    &InsideOutTracker::odom_callback, this);
+        this->m_opt_flow_sub = this->nh_.subscribe<std_msgs::Float32MultiArray>("opt_flow", 1,
+                                                                                &InsideOutTracker::opt_flow_callback,
+                                                                                this);
         this->m_reset_sub = this->nh_.subscribe<std_msgs::Bool>("inside_out_tracker/reset", 1,
                                                                 &InsideOutTracker::reset_callback, this);
 
@@ -82,6 +85,7 @@ namespace inside_out_tracker {
         this->m_num_frames_skipped = 0;
 
         this->m_flag_reset_filter = true;
+        this->m_flag_run_calibration_aruco = false;
         this->m_mu.setZero(); this->m_mu[1] = 3;
         this->m_cov.setZero();
     }
@@ -340,8 +344,14 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-    void InsideOutTracker::opt_flow_process_update(const double vx, const double vy, const double om) {
-        // TODO: to be implemented
+    void InsideOutTracker::opt_flow_process_update(const double vx, const double vy,
+                                                   const double om, const double qual) {
+        // FIXME: return if quality is too low
+        if (qual < 128) {
+            ROS_WARN("Optical flow quality too low!");
+            return;
+        }
+
         double x = this->m_mu[0];
         double y = this->m_mu[1];
         double th = this->m_mu[2];
@@ -656,12 +666,13 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
-    void InsideOutTracker::opt_flow_callback(const px_comm::OpticalFlowConstPtr &opt_flow_msg) {
+    void InsideOutTracker::opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg) {
         if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
             if (this->odom_source == "optical_flow") {
-                this->opt_flow_process_update(opt_flow_msg->velocity_x,
-                                              opt_flow_msg->velocity_y,
-                                              0.0);
+                this->opt_flow_process_update(-opt_flow_msg->data[0],
+                                              opt_flow_msg->data[1],
+                                              -opt_flow_msg->data[2],
+                                              opt_flow_msg->data[3]);
             }
         }
     }
@@ -676,12 +687,6 @@ namespace inside_out_tracker {
                 this->m_vel_angular = odom_msg->twist.twist.angular.z;
                 this->odom_process_update(odom_msg->twist.twist.linear.x,
                                           odom_msg->twist.twist.angular.z);
-            } else if (this->odom_source == "optical_flow") {
-                // this->m_vel_linear = ?
-                this->m_vel_angular = odom_msg->twist.twist.angular.z;
-                this->opt_flow_process_update(odom_msg->twist.twist.linear.x,
-                                              odom_msg->twist.twist.linear.y,
-                                              odom_msg->twist.twist.angular.z);
             }
         }
     }

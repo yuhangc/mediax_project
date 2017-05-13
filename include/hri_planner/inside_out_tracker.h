@@ -15,7 +15,6 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "nav_msgs/Odometry.h"
-#include "px_comm/OpticalFlow.h"
 
 #include "aruco/aruco.h"
 #include "aruco/cvdrawingutils.h"
@@ -63,6 +62,7 @@ private:
     // subscriber and publisher
     ros::Subscriber m_camera_sub;
     ros::Subscriber m_odom_sub;
+    ros::Subscriber m_opt_flow_sub;
     ros::Subscriber m_reset_sub;
     ros::Publisher m_pose_pub;
 
@@ -137,7 +137,7 @@ private:
 
     // callback functions
     void camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg);
-    void opt_flow_callback(const px_comm::OpticalFlowConstPtr &opt_flow_msg);
+    void opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg);
     void odom_callback(const nav_msgs::OdometryConstPtr &odom_msg);
     void reset_callback(const std_msgs::BoolConstPtr &reset_msg);
 
@@ -152,7 +152,7 @@ private:
     void get_pose_from_markers(std::vector<double> &th_meas, std::vector<Eigen::Vector2d> &pos_meas,
                                std::vector<double> &dist_meas);
     void odom_process_update(const double v, const double om);
-    void opt_flow_process_update(const double vx, const double vy, const double om);
+    void opt_flow_process_update(const double vx, const double vy, const double om, const double qual);
     void measurement_update();
     void simple_update();
 

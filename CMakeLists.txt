@@ -17,8 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   cmake_modules
   cv_bridge
-
-  px_comm
 )
 
 ################################################
@@ -160,10 +158,6 @@ set(SERIAL_MANAGER_HEADERS
         external/Arduino/CArduinoDevice.h
         )
 
-set(IMU_MANAGER_SOURCES
-    src/nodes/imu_manager_node.cpp
-)
-
 # set source, header for the haptics driver
 set(HAPTICS_SOURCES
     src/haptic_usb.cpp
@@ -207,8 +201,11 @@ target_link_libraries(tracker_node ${catkin_LIBRARIES} inside_out_tracker)
 add_executable(tracker_calibration ${TRACKER_CALIBRATION_SOURCES})
 target_link_libraries(tracker_calibration inside_out_tracker ${catkin_LIBRARIES})
 
-add_executable(imu_manager_node ${IMU_MANAGER_SOURCES})
+add_executable(imu_manager_node src/nodes/imu_manager_node.cpp)
 target_link_libraries(imu_manager_node ${catkin_LIBRARIES} serial_manager)
+
+add_executable(opt_flow_bridge src/nodes/opt_flow_bridge.cpp)
+target_link_libraries(opt_flow_bridge ${catkin_LIBRARIES} serial_manager)
 
 add_executable(haptics_usb_node ${HAPTICS_SOURCES} ${HAPTICS_HEADERS})
 target_link_libraries(haptics_usb_node ${catkin_LIBRARIES} usb-1.0 hidapi-libusb mccusb)

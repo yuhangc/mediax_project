@@ -17,6 +17,9 @@ namespace serial_interface {
         // constructor
         SerialManager(ros::NodeHandle &nh, ros::NodeHandle &pnh);
 
+        // initialization
+        void init();
+
         // destructor
         virtual ~SerialManager();
 
@@ -32,8 +35,8 @@ namespace serial_interface {
         // arduino device
         CArduinoDevice* arduino;
 
-        virtual void setup_publisher() {};
-        virtual void parse_and_publish(const std::string &message) {};
+        virtual void setup_publisher() = 0;
+        virtual void parse_and_publish(const std::string &message) = 0;
     };
 
     // ============================================================================
