@@ -67,15 +67,17 @@ namespace inside_out_tracker {
 
         // initialize publishers and subscribers
         this->m_pose_pub = this->nh_.advertise<geometry_msgs::Pose2D>("inside_out_tracker/pose2d", 1);
-        this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
-                                                                     &InsideOutTracker::camera_rgb_callback, this);
+//        this->m_camera_sub = this->nh_.subscribe<sensor_msgs::Image>("inside_out_tracker/image", 1,
+//                                                                     &InsideOutTracker::camera_rgb_callback, this);
         this->m_odom_sub = this->nh_.subscribe<nav_msgs::Odometry>("inside_out_tracker/odom", 1,
                                                                    &InsideOutTracker::odom_callback, this);
         this->m_reset_sub = this->nh_.subscribe<std_msgs::Bool>("inside_out_tracker/reset", 1,
                                                                 &InsideOutTracker::reset_callback, this);
 
         // time interval for discretization
-        this->m_dt_process = 0.05;
+        double process_rate;
+        pnh.param<double>("process_rate", process_rate, 20);
+        this->m_dt_process = 1.0 / process_rate;
 
         this->m_num_frames_skipped = 0;
 
@@ -316,7 +318,7 @@ namespace inside_out_tracker {
                     0.0, 1.0, v * cos(th) * dt,
                     0.0, 0.0, 1.0;
 
-            Gu << cos(th) * dt, -0.5 * v *sin(th) * dt * dt,
+            Gu << cos(th) * dt, -0.5 * v * sin(th) * dt * dt,
                     sin(th) * dt, 0.5 * v * cos(th) * dt * dt,
                     0.0, dt;
         }
@@ -340,6 +342,38 @@ namespace inside_out_tracker {
     // ============================================================================
     void InsideOutTracker::opt_flow_process_update(const double vx, const double vy, const double om) {
         // TODO: to be implemented
+        double x = this->m_mu[0];
+        double y = this->m_mu[1];
+        double th = this->m_mu[2];
+        const double dt = m_dt_process;
+
+        // compute the Jacobians Gx, Gu
+        Eigen::Matrix3d Gx;
+        Eigen::Matrix3d Gu;
+        double x_new, y_new, th_new;
+
+        th_new = wrap_to_pi(th + om * dt);
+        x_new = x + dt * (vx * cos(th) - vy * sin(th));
+        y_new = y + dt * (vx * sin(th) + vy * cos(th));
+
+        Gx.setIdentity();
+
+        Gu << dt * cos(th), -dt * sin(th), -dt * dt * (vx * sin(th) + vy * cos(th)),
+                dt * sin(th), dt * cos(th), dt * dt * (vx * cos(th) - vy * sin(th)),
+                0.0, 0.0, dt;
+
+        // update mean and covariance
+        m_mu[0] = x_new;
+        m_mu[1] = y_new;
+        m_mu[2] = th_new;
+
+        m_cov = Gx * m_cov * Gx.transpose() + dt * Gu * m_cov_proc * Gu.transpose();
+
+        // publish the new predicted pose
+        this->m_body_pose.x = this->m_mu[0];
+        this->m_body_pose.y = this->m_mu[1];
+        this->m_body_pose.theta = this->m_mu[2];
+        this->m_pose_pub.publish(this->m_body_pose);
     }
 
     // ============================================================================
@@ -622,8 +656,19 @@ namespace inside_out_tracker {
     }
 
     // ============================================================================
+    void InsideOutTracker::opt_flow_callback(const px_comm::OpticalFlowConstPtr &opt_flow_msg) {
+        if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
+            if (this->odom_source == "optical_flow") {
+                this->opt_flow_process_update(opt_flow_msg->velocity_x,
+                                              opt_flow_msg->velocity_y,
+                                              0.0);
+            }
+        }
+    }
+
+    // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
-        if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter))
+        if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
             std::cout << "odom update" << std::endl;
 
             if (this->odom_source == "odometer") {
@@ -631,14 +676,14 @@ namespace inside_out_tracker {
                 this->m_vel_angular = odom_msg->twist.twist.angular.z;
                 this->odom_process_update(odom_msg->twist.twist.linear.x,
                                           odom_msg->twist.twist.angular.z);
-            }
-            else if (this->odom_source == "optical_flow") {
+            } else if (this->odom_source == "optical_flow") {
                 // this->m_vel_linear = ?
                 this->m_vel_angular = odom_msg->twist.twist.angular.z;
                 this->opt_flow_process_update(odom_msg->twist.twist.linear.x,
                                               odom_msg->twist.twist.linear.y,
                                               odom_msg->twist.twist.angular.z);
             }
+        }
     }
 
     // ============================================================================

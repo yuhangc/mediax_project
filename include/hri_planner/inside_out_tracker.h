@@ -1,3 +1,6 @@
+#ifndef INSIDE_OUT_TRACKER_H
+#define INSIDE_OUT_TRACKER_H
+
 #include <unordered_map>
 #include <vector>
 
@@ -12,6 +15,7 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "nav_msgs/Odometry.h"
+#include "px_comm/OpticalFlow.h"
 
 #include "aruco/aruco.h"
 #include "aruco/cvdrawingutils.h"
@@ -133,6 +137,7 @@ private:
 
     // callback functions
     void camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg);
+    void opt_flow_callback(const px_comm::OpticalFlowConstPtr &opt_flow_msg);
     void odom_callback(const nav_msgs::OdometryConstPtr &odom_msg);
     void reset_callback(const std_msgs::BoolConstPtr &reset_msg);
 
@@ -159,3 +164,5 @@ private:
 };
 
 } // namespace
+
+#endif

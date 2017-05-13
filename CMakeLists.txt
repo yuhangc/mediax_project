@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   cmake_modules
   cv_bridge
+
+  px_comm
 )
 
 ################################################
@@ -80,9 +82,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES HRI_planner
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+  INCLUDE_DIRS include
+  LIBRARIES HRI_planner
+  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -101,8 +103,6 @@ include_directories(${aruco_INCLUDE_DIRS})
 ## specify openCV package and directories
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
-message("=========================================")
-message("${OpenCV_INCLUDE_DIRS}")
 
 ## specify Eigen3 package and directories
 find_package(Eigen3 REQUIRED)
@@ -149,16 +149,19 @@ set(TRACKER_CALIBRATION_SOURCES
     src/nodes/tracker_calibration.cpp
 )
 
-# set source, header for the imu manager
-set(IMU_MANAGER_SOURCES
-    src/imu_manager.cpp
-    src/nodes/imu_manager_node.cpp
+# set source, header for the serial manager
+set(SERIAL_MANAGER_SOURCES
+    src/serial_manager.cpp
     external/Arduino/CArduinoDevice.cpp
 )
 
-set(IMU_MANAGER_HEADERS
-    include/hri_planner/imu_manager.h
-    external/Arduino/CArduinoDevice.h
+set(SERIAL_MANAGER_HEADERS
+        include/hri_planner/serial_manager.h
+        external/Arduino/CArduinoDevice.h
+        )
+
+set(IMU_MANAGER_SOURCES
+    src/nodes/imu_manager_node.cpp
 )
 
 # set source, header for the haptics driver
@@ -188,6 +191,9 @@ set(EXP_CONTROL_FORMS
 )
 
 ## Declare C++ libraries
+add_library(serial_manager ${SERIAL_MANAGER_SOURCES} ${SERIAL_MANAGER_HEADERS})
+target_link_libraries(serial_manager ${catkin_LIBRARIES})
+
 add_library(inside_out_tracker ${INSIDE_OUT_TRACKER_SOURCES} ${INSIDE_OUT_TRACKER_HEADERS})
 target_link_libraries(inside_out_tracker ${catkin_LIBRARIES} ${aruco_LIBS} ${OpenCV_LIBRARIES})
 
@@ -201,8 +207,8 @@ target_link_libraries(tracker_node ${catkin_LIBRARIES} inside_out_tracker)
 add_executable(tracker_calibration ${TRACKER_CALIBRATION_SOURCES})
 target_link_libraries(tracker_calibration inside_out_tracker ${catkin_LIBRARIES})
 
-add_executable(imu_manager_node ${IMU_MANAGER_SOURCES} ${IMU_MANAGER_HEADERS})
-target_link_libraries(imu_manager_node ${catkin_LIBRARIES})
+add_executable(imu_manager_node ${IMU_MANAGER_SOURCES})
+target_link_libraries(imu_manager_node ${catkin_LIBRARIES} serial_manager)
 
 add_executable(haptics_usb_node ${HAPTICS_SOURCES} ${HAPTICS_HEADERS})
 target_link_libraries(haptics_usb_node ${catkin_LIBRARIES} usb-1.0 hidapi-libusb mccusb)

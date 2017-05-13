@@ -1,3 +1,6 @@
+#ifndef HAPTIC_USB_H
+#define HAPTIC_USB_H
+
 #include <string>
 #include <unordered_map>
 
@@ -74,3 +77,5 @@ private:
     // other functions
     void render(bool flag_render);
 };
+
+#endif

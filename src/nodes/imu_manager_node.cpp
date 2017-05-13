@@ -1,4 +1,4 @@
-#include "imu_manager.h"
+#include "serial_manager.h"
 
 int main(int argc, char** argv)
 {
@@ -6,7 +6,7 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
     ros::NodeHandle pnh("~");
 
-    IMUManager imu_manager(nh, pnh);
+    serial_interface::ImuSerial imu_manager(nh, pnh);
 
     ros::Rate loop_rate(500);
     while (!ros::isShuttingDown())
