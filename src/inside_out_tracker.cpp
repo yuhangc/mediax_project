@@ -146,6 +146,7 @@ namespace inside_out_tracker {
     // ============================================================================
     void InsideOutTracker::load_board_map(json &j) {
         int num_boards = j["num_boards"];
+        this->m_num_boards = num_boards;
 
         this->map_markers.clear();
         for (int i = 0; i < num_boards; i++) {
@@ -163,6 +164,17 @@ namespace inside_out_tracker {
 
             std::string board_type = j[board_name]["type"];
 
+            // convert units if necessary
+            if (j[board_name]["units"][0] == "inch") {
+                board_x *= INCH2METER;
+                board_y *= INCH2METER;
+                grid_width *= INCH2METER;
+                grid_height *= INCH2METER;
+            }
+            if (j[board_name]["units"][1] == "deg") {
+                board_th *= DEG2RAD;
+            }
+
             for (int gy = 0; gy < h; gy++) {
                 for (int gx = 0; gx < w; gx++) {
                     geometry_msgs::Pose2D pose;
@@ -179,17 +191,9 @@ namespace inside_out_tracker {
                     }
                     pose.theta = board_th;
 
-                    // convert units if necessary
-                    if (j[board_name]["units"][0] == "inch") {
-                        pose.x *= INCH2METER;
-                        pose.y *= INCH2METER;
-                    }
-                    if (j[board_name]["units"][1] == "deg") {
-                        pose.theta *= DEG2RAD;
-                    }
-
                     int marker_id = j[board_name]["marker_id_list"][gy * w + gx];
                     this->map_markers.insert({marker_id, pose});
+                    this->board_id_markers.insert({marker_id, i});
 
                     if (board_type == "vertical") {
                         this->type_markers.insert({marker_id, marker_vertical});
@@ -401,7 +405,12 @@ namespace inside_out_tracker {
         pos_meas.clear();
         dist_meas.clear();
 
-        // get position and orientation from the markers
+        // average the orientation of each board
+        Eigen::ArrayXd yaw_board(m_num_boards);
+        Eigen::ArrayXd samples_board(m_num_boards);
+        yaw_board.setZero();
+        samples_board.setZero();
+
         for (int i = 0; i < this->m_markers.size(); i++) {
             // do nothing if the detected marker is not in the map
             int id = this->m_markers[i].id;
@@ -413,12 +422,34 @@ namespace inside_out_tracker {
             angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
                     this->m_markers[i].Rvec.at<float>(1, 0),
                     this->m_markers[i].Rvec.at<float>(2, 0);
-            Eigen::Matrix3d rot_cam;
-            rot_cam = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
-            rot_cam = this->m_rot_cam_to_world * rot_cam;
+            Eigen::Matrix3d rot_marker;
+            rot_marker = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
+            rot_marker = this->m_rot_cam_to_world * rot_marker;
 
-            double yaw = this->map_markers[id].theta
-                         - std::atan2(rot_cam(1, 0), rot_cam(0, 0));
+            yaw_board[board_id_markers[id]] += std::atan2(rot_marker(1, 0), rot_marker(0, 0));
+            samples_board[board_id_markers[id]] += 1;
+        }
+        yaw_board /= samples_board;
+
+        // get position and orientation from the markers
+        for (int i = 0; i < this->m_markers.size(); i++) {
+            // do nothing if the detected marker is not in the map
+            int id = this->m_markers[i].id;
+            if (this->map_markers.count(id) <= 0) {
+                continue;
+            }
+
+//            Eigen::Vector3d angle_axis;
+//            angle_axis << this->m_markers[i].Rvec.at<float>(0, 0),
+//                    this->m_markers[i].Rvec.at<float>(1, 0),
+//                    this->m_markers[i].Rvec.at<float>(2, 0);
+//            Eigen::Matrix3d rot_marker;
+//            rot_marker = Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
+//            rot_marker = this->m_rot_cam_to_world * rot_marker;
+//
+//            double yaw = this->map_markers[id].theta
+//                         - std::atan2(rot_marker(1, 0), rot_marker(0, 0));
+            double yaw = this->map_markers[id].theta - yaw_board[board_id_markers[id]];
 
             // obtain position of the camera based on marker pose
             Eigen::Matrix2d t_rot_cam;
@@ -429,8 +460,16 @@ namespace inside_out_tracker {
                                              this->m_markers[i].Tvec.at<float>(2, 0));
 
             double dist = t_pos_marker_cam.norm();
+            Eigen::Vector2d t_pos_marker = t_rot_cam * t_pos_marker_cam;
             Eigen::Vector2d t_pos = t_pos_marker_world - t_rot_cam * t_pos_marker_cam;
-//            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << yaw << std::endl;
+//            std::cout << id << ": " << yaw_board[board_id_markers[id]] << ", ("
+//                      << this->m_markers[i].Tvec.at<float>(0, 0) << ", "
+//                      << this->m_markers[i].Tvec.at<float>(2, 0) << "), ("
+//                      << this->map_markers[id].x << ", "
+//                      << this->map_markers[id].y << "), ("
+//                      << t_pos_marker[0] << ", "
+//                      << t_pos_marker[1] << ")" << std::endl;
+            std::cout << id << ": " << t_pos[0] << ",  " << t_pos[1] << ",  " << yaw << std::endl;
 
             th_meas.push_back(wrap_to_pi(yaw + M_PI_2));
             pos_meas.push_back(t_pos);
@@ -493,8 +532,8 @@ namespace inside_out_tracker {
             Kt = this->m_cov * Ht.transpose() * cov_meas.inverse();
 
             if (i == 0) {
-                std::cout << "Measured pose:" << xy_meas[i][0] << ", " << xy_meas[i][1]
-                          << ", " << th_meas[i] << std::endl;
+//                std::cout << "Measured pose:" << xy_meas[i][0] << ", " << xy_meas[i][1]
+//                          << ", " << th_meas[i] << std::endl;
 //                std::cout << "Kalman Gain:" << std::endl;
 //                std::cout << Kt << std::endl;
             }

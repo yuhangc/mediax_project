@@ -74,8 +74,10 @@ private:
     Eigen::Matrix3d m_rot_cam_to_world;
 
     // marker map
+    int m_num_boards;
     std::unordered_map<int, geometry_msgs::Pose2D> map_markers;
     std::unordered_map<int, MarkerType> type_markers;
+    std::unordered_map<int, int> board_id_markers;
 
     // detected body pose and velocity
     geometry_msgs::Pose2D m_body_pose;

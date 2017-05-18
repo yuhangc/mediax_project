@@ -5,6 +5,8 @@
   <arg name="camera_serial" default="0" />
   <arg name="calibrated" default="0" />
 
+  <arg name="filter_mode" default="kalman" />
+
   <group ns="$(arg camera_name)">
     <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" />
 
@@ -38,7 +40,7 @@
 	  <param name="marker_size" value="0.204"/>
 	  <param name="draw_markers" value="$(arg draw_markers)"/>
 	  <!--param name="filter_mode" value="low_pass"/-->
-	  <param name="filter_mode" value="kalman"/>
+	  <param name="filter_mode" value="$(arg filter_mode)"/>
 	  <param name="odom_source" value="optical_flow"/>
 	  <param name="process_rate" value="50"/>
  	  <param name="num_frames_skip" value="5"/>
