@@ -83,8 +83,13 @@ private:
     // body pose and covariance for Kalman Filtering
     Eigen::Vector3d m_mu;
     Eigen::Matrix3d m_cov;
+
+    // velocity information
     double m_vel_linear;
     double m_vel_angular;
+    double m_vel_x;
+    double m_vel_y;
+    double m_qual;
 
     // Kalman filter parameters
     Eigen::Matrix3d m_cov_meas;

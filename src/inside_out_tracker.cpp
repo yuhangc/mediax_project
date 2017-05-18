@@ -353,7 +353,7 @@ namespace inside_out_tracker {
     void InsideOutTracker::opt_flow_process_update(const double vx, const double vy,
                                                    const double om, const double qual) {
         // FIXME: return if quality is too low
-        if (qual < 128) {
+        if (qual < 100) {
             ROS_WARN("Optical flow quality too low!");
             return;
         }
@@ -452,6 +452,11 @@ namespace inside_out_tracker {
     // ============================================================================
     // measurement update
     void InsideOutTracker::measurement_update() {
+        // don't updat if angular velocity is larger than 0.3
+        if (std::abs(this->m_vel_angular) > 0.2 && this->m_qual > 128) {
+            return;
+        }
+
         // don't update if no markers detected
         const unsigned long n = this->m_markers.size();
         if (n == 0)
@@ -490,8 +495,8 @@ namespace inside_out_tracker {
             if (i == 0) {
                 std::cout << "Measured pose:" << xy_meas[i][0] << ", " << xy_meas[i][1]
                           << ", " << th_meas[i] << std::endl;
-                std::cout << "Kalman Gain:" << std::endl;
-                std::cout << Kt << std::endl;
+//                std::cout << "Kalman Gain:" << std::endl;
+//                std::cout << Kt << std::endl;
             }
 
             // update mean and covariance
@@ -650,6 +655,11 @@ namespace inside_out_tracker {
     void InsideOutTracker::opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg) {
         if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
             if (this->odom_source == "optical_flow") {
+                this->m_vel_x = -opt_flow_msg->data[0];
+                this->m_vel_y = opt_flow_msg->data[1];
+                this->m_vel_angular = -opt_flow_msg->data[2];
+                this->m_qual = opt_flow_msg->data[3];
+
                 this->opt_flow_process_update(-opt_flow_msg->data[0],
                                               opt_flow_msg->data[1],
                                               -opt_flow_msg->data[2],
