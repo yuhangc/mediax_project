@@ -98,7 +98,7 @@ namespace serial_interface {
 
         // read in angular velocity
         ss >> value; ss.ignore(2);
-        this->opt_flow_data.data.push_back(value / 10000.0);
+        this->opt_flow_data.data.push_back(value / 32768.0 * 300.0 / 180.0 * 3.14159265359);
 
         // read in optical flow quality
         ss >> value; ss.ignore(2);

@@ -135,6 +135,9 @@ private:
     int m_num_sample_calibration;
     std::vector<Eigen::Vector3d> m_pose_calibration;
 
+    // measurement covariance multiplier
+    std::vector<double> m_cov_meas_mul;
+
     // callback functions
     void camera_rgb_callback(const sensor_msgs::ImageConstPtr &image_msg);
     void opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg);

@@ -239,6 +239,12 @@ namespace inside_out_tracker {
                 this->m_cov_proc(xx, yy) = j[odom_cov][zz];
             }
         }
+
+        // load the measurement multipliers
+        std::string meas_mul = this->meas_source + "_multiplier";
+        for (int i = 0; i < 10; i++) {
+            this->m_cov_meas_mul.push_back(j[meas_mul][i]);
+        }
     }
 
     // ============================================================================
@@ -435,37 +441,12 @@ namespace inside_out_tracker {
     // ============================================================================
     double InsideOutTracker::get_measurement_cov_multiplier(double dist, double v, double om) {
         // the larger the distance, the larger the multiplier
-        // FIXME: hard code for now
-        double multiplier;
-        if (dist < 2.0) {
-            multiplier = 1.0;
-        }
-        else if (dist < 3.0) {
-            multiplier = 1.5;
-        }
-        else if (dist < 4.0) {
-            multiplier = 2.0;
-        }
-        else if (dist < 5.0) {
-            multiplier = 3.0;
-        }
-        else {
-            multiplier = 5.0;
+        int id = (int) dist;
+        if (id > 9) {
+            id = 9;
         }
 
-        // increase multiplier based on angular velocity
-        // FIXME: hard code for now
-        if (om < 0.1) {
-            multiplier *= 1.0;
-        }
-        else if (om < 0.2) {
-            multiplier *= 2.0;
-        }
-        else{
-            multiplier *= 10.0;
-        }
-
-        return multiplier;
+        return m_cov_meas_mul[id];
     }
 
     // ============================================================================
