@@ -70,6 +70,7 @@ namespace serial_interface {
 
     private:
         std_msgs::Float32MultiArray opt_flow_data;
+        double time_start;
     };
 
 }

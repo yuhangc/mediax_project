@@ -80,6 +80,7 @@ namespace serial_interface {
     // ============================================================================
     void OptFlowSerial::setup_publisher() {
         this->serial_data_pub = this->nh_.advertise<std_msgs::Float32MultiArray>("opt_flow", 1);
+        time_start = ros::Time().now().toSec();
     }
 
     // ============================================================================
@@ -88,6 +89,9 @@ namespace serial_interface {
 
         float value;
         this->opt_flow_data.data.clear();
+
+        // read in time and ignores it
+        ss >> value; ss.ignore(3);
 
         // read in x, y velocities
         ss >> value; ss.ignore(2);

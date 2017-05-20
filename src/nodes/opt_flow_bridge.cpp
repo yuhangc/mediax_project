@@ -9,7 +9,7 @@ int main(int argc, char** argv)
     serial_interface::OptFlowSerial opt_flow(nh, pnh);
     opt_flow.init();
 
-    ros::Rate loop_rate(500);
+    ros::Rate loop_rate(1000);
     while (!ros::isShuttingDown())
     {
         opt_flow.update();

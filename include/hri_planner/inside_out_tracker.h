@@ -101,7 +101,8 @@ private:
     double m_pose_change_thresh;
 
     // low_pass filter velocity filter coefficient
-    double m_vel_filter_alpha;
+    double m_filter_alpha_high;
+    double m_filter_alpha_low;
 
     // time interval for discretization
     double m_dt_process;

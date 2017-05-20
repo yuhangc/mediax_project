@@ -39,7 +39,8 @@ namespace inside_out_tracker {
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
         pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
         pnh.param<int>("num_frames_skip", this->m_num_frames_skip, 0);
-        pnh.param<double>("velocity_filter_alpha", this->m_vel_filter_alpha, 0.3);
+        pnh.param<double>("filter_alpha_high", this->m_filter_alpha_high, 0.9);
+        pnh.param<double>("filter_alpha_low", this->m_filter_alpha_low, 0.5);
         pnh.param<double>("pose_change_threshold", this->m_pose_change_thresh, 0.3);
 
         pnh.param<double>("image_scale", this->m_image_scale, 0.5);
@@ -88,6 +89,12 @@ namespace inside_out_tracker {
         this->m_flag_run_calibration_aruco = false;
         this->m_mu.setZero(); this->m_mu[1] = 3;
         this->m_cov.setZero();
+
+        // initialize velocities
+        this->m_vel_x = 0.0;
+        this->m_vel_y = 0.0;
+        this->m_vel_linear = 0.0;
+        this->m_vel_angular = 0.0;
     }
 
     // ============================================================================
@@ -356,38 +363,39 @@ namespace inside_out_tracker {
     // ============================================================================
     void InsideOutTracker::opt_flow_process_update(const double vx, const double vy,
                                                    const double om, const double qual) {
-        // FIXME: return if quality is too low
+        // don't update if quality is too low
         if (qual < 100) {
             ROS_WARN("Optical flow quality too low!");
-            return;
+            // increase covariance
+            m_cov *= 1.1;
+        } else {
+            double x = this->m_mu[0];
+            double y = this->m_mu[1];
+            double th = this->m_mu[2];
+            const double dt = m_dt_process;
+
+            // compute the Jacobians Gx, Gu
+            Eigen::Matrix3d Gx;
+            Eigen::Matrix3d Gu;
+            double x_new, y_new, th_new;
+
+            th_new = wrap_to_pi(th + om * dt);
+            x_new = x + dt * (vx * cos(th) - vy * sin(th));
+            y_new = y + dt * (vx * sin(th) + vy * cos(th));
+
+            Gx.setIdentity();
+
+            Gu << dt * cos(th), -dt * sin(th), -dt * dt * (vx * sin(th) + vy * cos(th)),
+                    dt * sin(th), dt * cos(th), dt * dt * (vx * cos(th) - vy * sin(th)),
+                    0.0, 0.0, dt;
+
+            // update mean and covariance
+            m_mu[0] = x_new;
+            m_mu[1] = y_new;
+            m_mu[2] = th_new;
+
+            m_cov = Gx * m_cov * Gx.transpose() + Gu * m_cov_proc * Gu.transpose();
         }
-
-        double x = this->m_mu[0];
-        double y = this->m_mu[1];
-        double th = this->m_mu[2];
-        const double dt = m_dt_process;
-
-        // compute the Jacobians Gx, Gu
-        Eigen::Matrix3d Gx;
-        Eigen::Matrix3d Gu;
-        double x_new, y_new, th_new;
-
-        th_new = wrap_to_pi(th + om * dt);
-        x_new = x + dt * (vx * cos(th) - vy * sin(th));
-        y_new = y + dt * (vx * sin(th) + vy * cos(th));
-
-        Gx.setIdentity();
-
-        Gu << dt * cos(th), -dt * sin(th), -dt * dt * (vx * sin(th) + vy * cos(th)),
-                dt * sin(th), dt * cos(th), dt * dt * (vx * cos(th) - vy * sin(th)),
-                0.0, 0.0, dt;
-
-        // update mean and covariance
-        m_mu[0] = x_new;
-        m_mu[1] = y_new;
-        m_mu[2] = th_new;
-
-        m_cov = Gx * m_cov * Gx.transpose() + dt * Gu * m_cov_proc * Gu.transpose();
 
         // publish the new predicted pose
         this->m_body_pose.x = this->m_mu[0];
@@ -694,15 +702,18 @@ namespace inside_out_tracker {
     void InsideOutTracker::opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg) {
         if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
             if (this->odom_source == "optical_flow") {
-                this->m_vel_x = -opt_flow_msg->data[0];
-                this->m_vel_y = opt_flow_msg->data[1];
-                this->m_vel_angular = -opt_flow_msg->data[2];
-                this->m_qual = opt_flow_msg->data[3];
+                // low-pass filter the velocity
+                double alpha = m_filter_alpha_low;
+                m_qual = opt_flow_msg->data[3];
+                if (m_qual < 100) {
+                    alpha = m_filter_alpha_high;
+                }
 
-                this->opt_flow_process_update(-opt_flow_msg->data[0],
-                                              opt_flow_msg->data[1],
-                                              -opt_flow_msg->data[2],
-                                              opt_flow_msg->data[3]);
+                m_vel_x = alpha * m_vel_x + (1 - alpha) * (-opt_flow_msg->data[0]);
+                m_vel_y = alpha * m_vel_y + (1 - alpha) * opt_flow_msg->data[1];
+                m_vel_angular = alpha * m_vel_angular + (1 - alpha) * (-opt_flow_msg->data[2]);
+
+                this->opt_flow_process_update(m_vel_x, m_vel_y, m_vel_angular, m_qual);
             }
         }
     }
