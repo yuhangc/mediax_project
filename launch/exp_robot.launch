@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find hri_planner)/launch/tests/robot_tracker_test.launch"/>
+  <include file="$(find hri_planner)/launch/tests/robot_supervisor_test.launch"/>
+</launch>
