@@ -39,6 +39,8 @@ void ExpMainWindow::Init()
     // initialize publishers
     set_robot_state_pub_ = nh_.advertise<std_msgs::String>("/set_robot_state", 1);
     haptic_control_pub_ = nh_.advertise<std_msgs::String>("/haptic_control", 1);
+    reset_human_tracker_pub_ = nh_.advertise<std_msgs::Bool>("/tracking/reset_human_tracker", 1);
+    reset_robot_tracker_pub_ = nh_.advertise<std_msgs::Bool>("/tracking/reset_robot_tracker", 1);
 
     // get parameters
     ros::param::param<std::string>("~dir_loading_pre_set", dir_loading_pre_set_, "/home");
@@ -327,6 +329,9 @@ void ExpMainWindow::state_machine_exp1_config1()
             // start data saving
             start_data_saving();
 
+            // send haptic feedback
+            send_haptic_cue();
+
             // start the trial
             exp_state_ = exp_state_experimenting;
             ui->browser_sys_message->append("Started trial!");
@@ -455,6 +460,19 @@ void ExpMainWindow::set_cond_trial_text()
 
     ui->label_trial_num->setText(text);
     ui->label_trial_cond->setText(ui->combo_cond_set->itemText(cond_num_));
+
+    // set instructions
+    int action_id = trial_num_;
+    if (flag_exp_training_) {
+        action_id += num_training_total_[cond_num_];
+    }
+
+    if (robot_action_list_[cond_num_][action_id] == 0) {
+        ui->label_instruction->setText("Avoid Human!");
+    }
+    else {
+        ui->label_instruction->setText("Don't avoid human.");
+    }
 }
 
 //===========================================================================
@@ -608,4 +626,20 @@ void ExpMainWindow::on_button_start_exp_clicked()
 void ExpMainWindow::on_button_stop_exp_clicked()
 {
     flag_stop_exp_requested_ = true;
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_reset_human_tracker_clicked()
+{
+    std_msgs::Bool reset_msg;
+    reset_msg.data = true;
+    reset_human_tracker_pub_.publish(reset_msg);
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_reset_robot_tracker_clicked()
+{
+    std_msgs::Bool reset_msg;
+    reset_msg.data = true;
+    reset_human_tracker_pub_.publish(reset_msg);
 }

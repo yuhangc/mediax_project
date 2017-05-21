@@ -14,13 +14,13 @@
   },
 
   "num_conditions": 3,
-  "num_trainings": [4, 6, 6],
-  "num_trials": [6, 10, 10],
+  "num_trainings": [2, 6, 6],
+  "num_trials": [4, 20, 20],
 
   "robot_actions": {
     "_comment": "must match number of conditions and number of trainings + trials, 0 represents stationary and 1 represents random move",
-    "condition_0": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    "condition_1": [1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0],
-    "condition_2": [1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1]
+    "condition_0": [0, 0, 0, 0, 0, 0],
+    "condition_1": [0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0],
+    "condition_2": [0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1]
   }
 }

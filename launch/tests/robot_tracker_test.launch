@@ -16,6 +16,7 @@
 	  <remap from="/$(arg camera)/inside_out_tracker/image" to="/$(arg camera)/rgb/image_mono"/>
 	  <remap from="/$(arg camera)/inside_out_tracker/pose2d" to="/tracking/robot_pose2d"/>
 	  <remap from="/$(arg camera)/inside_out_tracker/odom" to="/odom"/>
+	  <remap from="/$(arg camera)/inside_out_tracker/reset" to="/tracking/reset_robot_tracker"/>
   </node>
 
   <!--node pkg="hri_planner" type="imu_manager_node" name="imu_manager" output="screen">

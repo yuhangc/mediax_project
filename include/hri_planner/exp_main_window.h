@@ -74,6 +74,8 @@ private:
     // publishers
     ros::Publisher set_robot_state_pub_;
     ros::Publisher haptic_control_pub_;
+    ros::Publisher reset_human_tracker_pub_;
+    ros::Publisher reset_robot_tracker_pub_;
 
     // variables to record
     int robot_state_;
@@ -177,6 +179,8 @@ private slots:
     void on_button_set_saving_dir_clicked();
     void on_button_start_exp_clicked();
     void on_button_stop_exp_clicked();
+    void on_button_reset_human_tracker_clicked();
+    void on_button_reset_robot_tracker_clicked();
 };
 
 #endif // EXP_MAIN_WINDOW_H
