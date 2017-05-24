@@ -140,7 +140,7 @@ class RobotSupervisor:
         self.check_set_state()
 
         # send velocity commands
-        self.send_cmd_vel(self.cmd_vel_teleop_.linear.x, self.cmd_vel_teleop_.angular.z)
+        # self.send_cmd_vel(self.cmd_vel_teleop_.linear.x, self.cmd_vel_teleop_.angular.z)
 
     def update(self):
         # state machine
