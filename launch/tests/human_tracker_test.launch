@@ -1,7 +1,7 @@
 <launch>
   <arg name="draw_markers" default="false" />
 
-  <arg name="camera_name" default="camera" />
+  <arg name="camera_name" default="pg_camera" />
   <arg name="camera_serial" default="0" />
   <arg name="calibrated" default="0" />
 
