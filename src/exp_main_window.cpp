@@ -643,3 +643,30 @@ void ExpMainWindow::on_button_reset_robot_tracker_clicked()
     reset_msg.data = true;
     reset_human_tracker_pub_.publish(reset_msg);
 }
+
+//===========================================================================
+void ExpMainWindow::on_button_set_start_trial_clicked()
+{
+    trial_num_ = ui->spinBox_trial_num_set->value();
+    if (trial_num_ >= num_training_total_[cond_num_]) {
+        trial_num_ -= num_training_total_[cond_num_];
+        flag_exp_training_ = false;
+        ui->browser_sys_message->append("Set to trial number " + QString::number(trial_num_));
+    } else {
+        flag_exp_training_ = true;
+        ui->browser_sys_message->append("Set to training number " + QString::number(trial_num_));
+    }
+
+    set_cond_trial_text();
+    exp_state_ = exp_state_idle;
+}
+
+//===========================================================================
+void ExpMainWindow::on_button_set_cond_clicked()
+{
+    cond_num_ = ui->combo_cond_set->currentIndex();
+    ui->browser_sys_message->append("Set to condition: " + ui->combo_cond_set->currentText());
+    ui->browser_sys_message->append("Please also set the trial number!");
+
+    exp_state_ = exp_state_idle;
+}

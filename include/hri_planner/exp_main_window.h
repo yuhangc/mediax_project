@@ -181,6 +181,8 @@ private slots:
     void on_button_stop_exp_clicked();
     void on_button_reset_human_tracker_clicked();
     void on_button_reset_robot_tracker_clicked();
+    void on_button_set_start_trial_clicked();
+    void on_button_set_cond_clicked();
 };
 
 #endif // EXP_MAIN_WINDOW_H
