@@ -1,6 +1,6 @@
 {
   "type": "board_map",
-  "num_boards": 4,
+  "num_boards": 8,
 
   "board0": {
     "type": "vertical",
@@ -60,5 +60,65 @@
     "grid_width": 11.125,
 
     "marker_id_list": [160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171]
+  },
+
+  "board4": {
+    "type": "vertical",
+
+    "x": 34, "y": 270.5,
+    "theta": -50.85,
+    "units": ["inch", "deg"],
+
+    "height": 3,
+    "width": 4,
+    "grid_height": 8.5,
+    "grid_width": 11.125,
+
+    "marker_id_list": [180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191]
+  },
+
+  "board5": {
+    "type": "vertical",
+
+    "x": -124.5, "y": 217,
+    "theta": 35.13,
+    "units": ["inch", "deg"],
+
+    "height": 3,
+    "width": 4,
+    "grid_height": 8.5,
+    "grid_width": 11.125,
+
+    "marker_id_list": [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211]
+  },
+
+  "board6": {
+    "type": "vertical",
+
+    "x": 59, "y": 49,
+    "theta": -137.72,
+    "units": ["inch", "deg"],
+
+    "height": 3,
+    "width": 4,
+    "grid_height": 8.5,
+    "grid_width": 11.125,
+
+    "marker_id_list": [220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231]
+  },
+
+  "board7": {
+    "type": "vertical",
+
+    "x": -115, "y": 32,
+    "theta": 135.0,
+    "units": ["inch", "deg"],
+
+    "height": 3,
+    "width": 4,
+    "grid_height": 8.5,
+    "grid_width": 11.125,
+
+    "marker_id_list": [240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251]
   }
 }
