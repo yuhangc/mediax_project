@@ -3,12 +3,12 @@
   "configuration": 1,
 
   "human_target0": {
-    "x": 0.0, "y": 1.0,
+    "x": 0.0, "y": 1.5,
     "theta": 0.0,
     "units": ["meter", "deg"]
   },
   "human_target1": {
-    "x": 0.0, "y": 6.0,
+    "x": 0.0, "y": 6.5,
     "theta": 0.0,
     "units": ["meter", "deg"]
   },
