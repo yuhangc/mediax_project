@@ -140,9 +140,12 @@ void ExpMainWindow::load_protocol_exp1(json &proto_parser)
             std::stringstream field_name;
             field_name << "condition_" << i;
 
+            int act = proto_parser["robot_actions"][field_name.str()][j];
+            ui->browser_sys_message->append(QString::number(act));
             action_list.push_back(proto_parser["robot_actions"][field_name.str()][j]);
         }
         robot_action_list_.push_back(action_list);
+        ui->browser_sys_message->append("end");
     }
 
 }
@@ -314,10 +317,6 @@ void ExpMainWindow::state_machine_exp1_config1()
             set_robot_state_.data = "Teleop";
             set_robot_state_pub_.publish(set_robot_state_);
 
-            // reset trial number
-            trial_num_ = 0;
-            flag_exp_training_ = true;
-
             exp_state_ = exp_state_pre_experiment;
             ui->browser_sys_message->append("Started experiment!");
         }
@@ -355,7 +354,11 @@ void ExpMainWindow::state_machine_exp1_config1()
             }
             else {
                 if (trial_num_ >= num_trial_total_[cond_num_]) {
+                    // reset trial number
                     cond_num_ ++;
+                    trial_num_ = 0;
+                    flag_exp_training_ = true;
+
                     exp_state_ = exp_state_idle;
                     ui->browser_sys_message->append("Condition ended!");
                     break;
@@ -463,7 +466,7 @@ void ExpMainWindow::set_cond_trial_text()
 
     // set instructions
     int action_id = trial_num_;
-    if (flag_exp_training_) {
+    if (!flag_exp_training_) {
         action_id += num_training_total_[cond_num_];
     }
 
@@ -540,7 +543,7 @@ void ExpMainWindow::robot_odom_callback(const nav_msgs::Odometry::ConstPtr &odom
 {
     // record robot velocity
     robot_vel_curr_.linear.x = odom_msg->twist.twist.linear.x;
-    robot_vel_curr_.angular.z = odom_msg->twist.twist.angular.y;
+    robot_vel_curr_.angular.z = odom_msg->twist.twist.angular.z;
 
     // optional: record odom pose as the robot pose
     if (flag_use_odom_as_pose_) {
