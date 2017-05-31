@@ -110,8 +110,8 @@
   "board7": {
     "type": "vertical",
 
-    "x": -115, "y": 32,
-    "theta": 135.0,
+    "x": -105, "y": 22,
+    "theta": 127.0,
     "units": ["inch", "deg"],
 
     "height": 3,
