@@ -13,6 +13,7 @@
 	  <param name="filter_mode" value="kalman"/>
       <param name="odom_source" value="odometer"/>
 	  <param name="num_frames_skip" value="2"/>
+	  <param name="num_process_skip" value="1"/>
 	  <param name="image_scale" value="1.0"/>
 	  <param name="draw_markers" value="$(arg draw_markers)"/>
 	  <remap from="/$(arg camera)/inside_out_tracker/image" to="/$(arg camera)/rgb/image_mono"/>
