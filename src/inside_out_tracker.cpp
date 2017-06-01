@@ -39,6 +39,7 @@ namespace inside_out_tracker {
         pnh.param<double>("marker_size", this->m_marker_size, 0.204);
         pnh.param<int>("num_sample_reset", this->m_num_sample_reset_max, 30);
         pnh.param<int>("num_frames_skip", this->m_num_frames_skip, 0);
+        pnh.param<int>("num_process_skip", this->m_num_process_skip, 0);
         pnh.param<double>("filter_alpha_high", this->m_filter_alpha_high, 0.9);
         pnh.param<double>("filter_alpha_low", this->m_filter_alpha_low, 0.5);
         pnh.param<double>("pose_change_threshold", this->m_pose_change_thresh, 0.3);
@@ -80,10 +81,11 @@ namespace inside_out_tracker {
 
         // time interval for discretization
         double process_rate;
-        pnh.param<double>("process_rate", process_rate, 20);
-        this->m_dt_process = 1.0 / process_rate;
+        pnh.param<double>("process_rate", process_rate, 50);
+        this->m_dt_process = 1.0 / process_rate * m_num_process_skip;
 
         this->m_num_frames_skipped = 0;
+        this->m_num_process_skipped = 0;
 
         this->m_flag_reset_filter = true;
         this->m_flag_run_calibration_aruco = false;
@@ -720,6 +722,13 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
+        if (m_num_process_skipped < m_num_process_skip) {
+            // skip this frame
+            m_num_process_skipped ++;
+            return;
+        }
+        m_num_process_skipped = 0;
+
         if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
             std::cout << "odom update" << std::endl;
 

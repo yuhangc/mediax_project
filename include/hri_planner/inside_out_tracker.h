@@ -110,6 +110,8 @@ private:
     // skipping frames
     int m_num_frames_skip;
     int m_num_frames_skipped;
+    int m_num_process_skip;
+    int m_num_process_skipped;
 
     // camera parameters
     aruco::CameraParameters m_cam_param;
