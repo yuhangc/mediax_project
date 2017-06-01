@@ -81,8 +81,8 @@ namespace inside_out_tracker {
 
         // time interval for discretization
         double process_rate;
-        pnh.param<double>("process_rate", process_rate, 50);
-        this->m_dt_process = 1.0 / process_rate * m_num_process_skip;
+        pnh.param<double>("process_rate", process_rate, 25);
+        this->m_dt_process = 1.0 / process_rate;
 
         this->m_num_frames_skipped = 0;
         this->m_num_process_skipped = 0;
@@ -722,13 +722,6 @@ namespace inside_out_tracker {
 
     // ============================================================================
     void InsideOutTracker::odom_callback(const nav_msgs::OdometryConstPtr &odom_msg) {
-        if (m_num_process_skipped < m_num_process_skip) {
-            // skip this frame
-            m_num_process_skipped ++;
-            return;
-        }
-        m_num_process_skipped = 0;
-
         if (this->filter_mode == "kalman" && (!this->m_flag_reset_filter)) {
             std::cout << "odom update" << std::endl;
 
