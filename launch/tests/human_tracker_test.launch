@@ -6,6 +6,7 @@
   <arg name="calibrated" default="0" />
 
   <arg name="filter_mode" default="kalman" />
+  <arg name="map_file" default="exp_test.json" />
 
   <group ns="$(arg camera_name)">
     <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" />
@@ -35,7 +36,7 @@
 
   <node pkg="hri_planner" type="tracker_node" name="human_localization" output="screen">
 	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/pointgrey_flea3_half.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
+	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/$(arg map_file)"/>
 	  <param name="filter_param_file" value="$(find hri_planner)/params/human_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="draw_markers" value="$(arg draw_markers)"/>

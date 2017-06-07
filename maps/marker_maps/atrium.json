@@ -35,7 +35,7 @@
   "board2": {
     "type": "vertical",
 
-    "x": -129, "y": 152,
+    "x": -104.5, "y": 152,
     "theta": 90.0,
     "units": ["inch", "deg"],
 
@@ -50,7 +50,7 @@
   "board3": {
     "type": "vertical",
 
-    "x": 143, "y": 186,
+    "x": 117.5, "y": 186,
     "theta": -90.0,
     "units": ["inch", "deg"],
 
