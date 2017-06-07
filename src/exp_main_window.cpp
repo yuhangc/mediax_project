@@ -391,7 +391,7 @@ void ExpMainWindow::state_machine_exp2()
 void ExpMainWindow::set_robot_action_delay()
 {
     int action_id = trial_num_;
-    if (flag_exp_training_) {
+    if (!flag_exp_training_) {
         action_id += num_training_total_[cond_num_];
     }
 
@@ -416,7 +416,7 @@ void ExpMainWindow::set_robot_action_delay()
 void ExpMainWindow::send_robot_action()
 {
     int action_id = trial_num_;
-    if (flag_exp_training_) {
+    if (!flag_exp_training_) {
         action_id += num_training_total_[cond_num_];
     }
 
@@ -436,7 +436,7 @@ void ExpMainWindow::send_robot_action()
 void ExpMainWindow::send_haptic_cue()
 {
     int action_id = trial_num_;
-    if (flag_exp_training_) {
+    if (!flag_exp_training_) {
         action_id += num_training_total_[cond_num_];
     }
 
