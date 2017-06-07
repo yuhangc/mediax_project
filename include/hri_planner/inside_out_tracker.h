@@ -119,6 +119,9 @@ private:
     // marker size
     double m_marker_size;
 
+    // optical flow sensor height
+    double m_opt_sensor_height;
+
     // image from camera
     cv::Mat m_image_input;
 

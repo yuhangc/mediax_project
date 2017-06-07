@@ -43,7 +43,7 @@
 	  <!--param name="filter_mode" value="low_pass"/-->
 	  <param name="filter_mode" value="$(arg filter_mode)"/>
 	  <param name="odom_source" value="optical_flow"/>
-	  <param name="process_rate" value="50"/>
+	  <param name="process_rate" value="45"/>
  	  <param name="num_frames_skip" value="5"/>
 	  <param name="image_scale" value="0.5"/>
 	  <remap from="/inside_out_tracker/image" to="/$(arg camera_name)/image_mono"/>

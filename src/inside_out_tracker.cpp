@@ -48,6 +48,8 @@ namespace inside_out_tracker {
 
         pnh.param<int>("num_sample_calibration", this->m_num_sample_calibration, 100);
 
+        pnh.param<double>("opt_sensor_height", this->m_opt_sensor_height, 0.75);
+
         // initialize aruco trackers
         this->m_detector.setThresholdParams(7, 7);
         this->m_detector.setThresholdParamRange(2, 0);
@@ -711,8 +713,10 @@ namespace inside_out_tracker {
                     alpha = m_filter_alpha_high;
                 }
 
-                m_vel_x = alpha * m_vel_x + (1 - alpha) * (-opt_flow_msg->data[0]);
-                m_vel_y = alpha * m_vel_y + (1 - alpha) * opt_flow_msg->data[1];
+                double vx = (-opt_flow_msg->data[0]) / opt_flow_msg->data[4] * m_opt_sensor_height;
+                double vy = opt_flow_msg->data[1] / opt_flow_msg->data[4] * m_opt_sensor_height;
+                m_vel_x = alpha * m_vel_x + (1 - alpha) * vx;
+                m_vel_y = alpha * m_vel_y + (1 - alpha) * vy;
                 m_vel_angular = alpha * m_vel_angular + (1 - alpha) * (-opt_flow_msg->data[2]);
 
                 this->opt_flow_process_update(m_vel_x, m_vel_y, m_vel_angular, m_qual);
