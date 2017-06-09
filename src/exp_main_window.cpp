@@ -141,7 +141,6 @@ void ExpMainWindow::load_protocol_exp1(json &proto_parser)
             field_name << "condition_" << i;
 
             int act = proto_parser["robot_actions"][field_name.str()][j];
-            ui->browser_sys_message->append(QString::number(act));
             action_list.push_back(proto_parser["robot_actions"][field_name.str()][j]);
         }
         robot_action_list_.push_back(action_list);
@@ -470,11 +469,19 @@ void ExpMainWindow::set_cond_trial_text()
         action_id += num_training_total_[cond_num_];
     }
 
-    if (robot_action_list_[cond_num_][action_id] == 0) {
-        ui->label_instruction->setText("Avoid Human!");
-    }
-    else {
-        ui->label_instruction->setText("Don't avoid human.");
+    switch (robot_action_list_[cond_num_][action_id]) {
+    case 0:
+        ui->label_instruction->setText("Avoid human: wait-move-stop");
+        break;
+    case 1:
+        ui->label_instruction->setText("Avoid human: move-stop");
+        break;
+    case 2:
+        ui->label_instruction->setText("Don't avoid: wait-move");
+        break;
+    case 3:
+        ui->label_instruction->setText("Don't avoid: move-stop-move");
+        break;
     }
 }
 
