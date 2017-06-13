@@ -543,13 +543,6 @@ namespace inside_out_tracker {
             cov_meas = Ht * this->m_cov * Ht.transpose(); cov_meas += Qt;
             Kt = this->m_cov * Ht.transpose() * cov_meas.inverse();
 
-            if (i == 0) {
-//                std::cout << "Measured pose:" << xy_meas[i][0] << ", " << xy_meas[i][1]
-//                          << ", " << th_meas[i] << std::endl;
-//                std::cout << "Kalman Gain:" << std::endl;
-//                std::cout << Kt << std::endl;
-            }
-
             // update mean and covariance
             Eigen::Vector3d meas_diff(xy_meas[i][0] - xy_pred[0],
                                       xy_meas[i][1] - xy_pred[1],
@@ -588,7 +581,6 @@ namespace inside_out_tracker {
 
         pos /= th_meas.size();
         th = wrap_to_pi(th_meas[0] + dth / th_meas.size());
-//        std::cout << pos[0] << ",  " << pos[1] << ",  " << th << std::endl;
 
         if (this->m_flag_reset_filter) {
             Eigen::Vector3d t_pose(pos[0], pos[1], th);
@@ -610,7 +602,10 @@ namespace inside_out_tracker {
         this->m_body_pose.y = this->m_mu[1];
         this->m_body_pose.theta = this->m_mu[2];
 
-        this->m_pose_pub.publish(this->m_body_pose);
+        // do not publish in initialization
+        if (!this->m_flag_reset_filter) {
+            this->m_pose_pub.publish(this->m_body_pose);
+        }
     }
 
     // ============================================================================

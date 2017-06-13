@@ -358,6 +358,8 @@ void ExpMainWindow::state_machine_exp1_config1()
                     trial_num_ = 0;
                     flag_exp_training_ = true;
 
+                    set_cond_trial_text();
+
                     exp_state_ = exp_state_idle;
                     ui->browser_sys_message->append("Condition ended!");
                     break;
@@ -481,6 +483,8 @@ void ExpMainWindow::set_cond_trial_text()
         break;
     case 3:
         ui->label_instruction->setText("Don't avoid: move-stop-move");
+        break;
+    default:
         break;
     }
 }
