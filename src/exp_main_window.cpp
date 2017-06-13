@@ -440,11 +440,11 @@ void ExpMainWindow::send_haptic_cue()
     }
 
     if (cond_num_ == 2) {
-        if (robot_action_list_[cond_num_][action_id] == 0) {
+        if (robot_action_list_[cond_num_][action_id] < 2) {
             haptic_msg_.data = "Attract";
             haptic_control_pub_.publish(haptic_msg_);
         }
-        else if (robot_action_list_[cond_num_][action_id] == 1) {
+        else if (robot_action_list_[cond_num_][action_id] < 4) {
             haptic_msg_.data = "Repel";
             haptic_control_pub_.publish(haptic_msg_);
         }
