@@ -42,7 +42,7 @@ void loop()
   
   sensor.update();
   
-  Serial.print(loop_start); Serial.print(":  ");
+//  Serial.print(loop_start); Serial.print(":  ");
   Serial.print(sensor.flow_comp_m_x());Serial.print(", ");
   Serial.print(sensor.flow_comp_m_y());Serial.print(", ");
   Serial.print(sensor.gyro_z_rate()); Serial.print(", ");

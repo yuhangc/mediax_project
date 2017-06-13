@@ -90,8 +90,8 @@ namespace serial_interface {
         float value;
         this->opt_flow_data.data.clear();
 
-        // read in time and ignores it
-        ss >> value; ss.ignore(3);
+//        // read in time and ignores it
+//        ss >> value; ss.ignore(3);
 
         // read in x, y velocities
         ss >> value; ss.ignore(2);
