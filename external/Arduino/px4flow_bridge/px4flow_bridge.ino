@@ -26,6 +26,7 @@ PX4Flow sensor = PX4Flow();
 
 long int loop_start;
 int loop_time = 20000; // us
+float om_avg;
 
 void setup()
 {
@@ -34,6 +35,7 @@ void setup()
   
   // start timer
   loop_start = micros();
+  om_avg = 0;
 }
 
 void loop()
@@ -41,11 +43,13 @@ void loop()
   static long int dt = 0;
   
   sensor.update();
+//  om_avg = 0.95 * om_avg + 0.05 * sensor.gyro_z_rate();
   
-//  Serial.print(loop_start); Serial.print(":  ");
+  Serial.print(loop_start); Serial.print(":  ");
   Serial.print(sensor.flow_comp_m_x());Serial.print(", ");
   Serial.print(sensor.flow_comp_m_y());Serial.print(", ");
   Serial.print(sensor.gyro_z_rate()); Serial.print(", ");
+//  Serial.print(om_avg); Serial.print("), ");
   Serial.print(sensor.qual()); Serial.print(", ");
   Serial.println(sensor.ground_distance());
 
