@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
+    <width>1008</width>
     <height>815</height>
    </rect>
   </property>
@@ -369,7 +369,31 @@ p, li { white-space: pre-wrap; }
          <string>Experiment Control</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_8">
-         <item row="2" column="0">
+         <item row="1" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <widget class="QLabel" name="label_20">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Experimenter Instruction:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_instruction">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="0">
           <layout class="QGridLayout" name="gridLayout_6">
            <item row="1" column="0">
             <widget class="QComboBox" name="combo_cond_set">
@@ -409,7 +433,7 @@ p, li { white-space: pre-wrap; }
            </item>
           </layout>
          </item>
-         <item row="2" column="1">
+         <item row="3" column="1">
           <layout class="QGridLayout" name="gridLayout_7">
            <item row="2" column="0">
             <widget class="QPushButton" name="button_start_exp">
@@ -479,7 +503,7 @@ p, li { white-space: pre-wrap; }
            </item>
           </layout>
          </item>
-         <item row="3" column="0" colspan="2">
+         <item row="4" column="0" colspan="2">
           <spacer name="verticalSpacer_2">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -492,10 +516,10 @@ p, li { white-space: pre-wrap; }
            </property>
           </spacer>
          </item>
-         <item row="1" column="0" colspan="2">
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item row="2" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_10">
            <item>
-            <widget class="QLabel" name="label_20">
+            <widget class="QLabel" name="label_25">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -503,16 +527,12 @@ p, li { white-space: pre-wrap; }
               </sizepolicy>
              </property>
              <property name="text">
-              <string>Experimenter Instruction:</string>
+              <string>Gyro drift monitor:</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_instruction">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
+            <widget class="QLCDNumber" name="lcd_gyro_meas"/>
            </item>
           </layout>
          </item>
@@ -528,7 +548,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1005</width>
+     <width>1008</width>
      <height>25</height>
     </rect>
    </property>

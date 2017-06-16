@@ -19,6 +19,7 @@
 #include "std_msgs/Int8.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Bool.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "nav_msgs/Odometry.h"
 
 #include "json.hpp"
@@ -69,6 +70,7 @@ private:
     ros::Subscriber robot_odom_sub_;
     ros::Subscriber human_pose2d_sub_;
     ros::Subscriber robot_pose2d_sub_;
+    ros::Subscriber opt_flow_sub_;
     ros::Subscriber sys_msg_sub_;
 
     // publishers
@@ -161,6 +163,8 @@ private:
 
     void robot_state_callback(const std_msgs::String::ConstPtr& state_msg);
     void robot_odom_callback(const nav_msgs::Odometry::ConstPtr& odom_msg);
+
+    void opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg);
 
     void sys_msg_callback(const std_msgs::String::ConstPtr& sys_msg);
 

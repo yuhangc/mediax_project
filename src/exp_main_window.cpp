@@ -33,6 +33,10 @@ void ExpMainWindow::Init()
     robot_odom_sub_ = nh_.subscribe<nav_msgs::Odometry>("/robot_odom", 1,
                                                         &ExpMainWindow::robot_odom_callback, this);
 
+    this->opt_flow_sub_ = this->nh_.subscribe<std_msgs::Float32MultiArray>("opt_flow", 1,
+                                                                            &ExpMainWindow::opt_flow_callback,
+                                                                            this);
+
     sys_msg_sub_ = nh_.subscribe<std_msgs::String>("/sys_message", 1,
                                                    &ExpMainWindow::sys_msg_callback, this);
 
@@ -574,6 +578,13 @@ void ExpMainWindow::robot_odom_callback(const nav_msgs::Odometry::ConstPtr &odom
     // display the velocity
     ui->lcd_vel_current_lin->display(robot_vel_curr_.linear.x);
     ui->lcd_vel_current_ang->display(robot_vel_curr_.angular.z);
+}
+
+//===========================================================================
+void ExpMainWindow::opt_flow_callback(const std_msgs::Float32MultiArrayConstPtr &opt_flow_msg)
+{
+    float gyro_z = opt_flow_msg->data[2];
+    ui->lcd_gyro_meas->display(gyro_z);
 }
 
 //===========================================================================
