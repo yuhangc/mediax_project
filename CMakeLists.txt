@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(hri_planner)
+project(mediax_project)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
@@ -81,7 +81,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES hri_planner
+  LIBRARIES mediax_project
   CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -116,7 +116,7 @@ find_package(OpenGL REQUIRED)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-    include/hri_planner
+    include/mediax_project
     external/Arduino
     ${catkin_INCLUDE_DIRS}
 )
@@ -129,7 +129,7 @@ set(INSIDE_OUT_TRACKER_SOURCES
 )
 
 set(INSIDE_OUT_TRACKER_HEADERS
-    include/hri_planner/inside_out_tracker.h
+    include/mediax_project/inside_out_tracker.h
 )
 
 # set source, header for the aruco vision tracking node
@@ -154,7 +154,7 @@ set(SERIAL_MANAGER_SOURCES
 )
 
 set(SERIAL_MANAGER_HEADERS
-        include/hri_planner/serial_manager.h
+        include/mediax_project/serial_manager.h
         external/Arduino/CArduinoDevice.h
         )
 
@@ -165,7 +165,7 @@ set(HAPTICS_SOURCES
 )
 
 set(HAPTICS_HEADERS
-    include/hri_planner/haptic_usb.h
+    include/mediax_project/haptic_usb.h
 )
 
 # set source, header and the ui for the experiment main control window
@@ -176,8 +176,8 @@ set(EXP_CONTROL_SOURCES
 )
 
 set(EXP_CONTROL_HEADERS
-    include/hri_planner/exp_main_window.h
-    include/hri_planner/gl_tracking_display.h
+    include/mediax_project/exp_main_window.h
+    include/mediax_project/gl_tracking_display.h
 )
 
 set(EXP_CONTROL_FORMS
