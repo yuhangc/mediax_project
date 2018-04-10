@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="world_file"  default="$(find hri_planner)/world/corridor_without_human.world"/>
+    <arg name="world_file"  default="$(find mediax_project)/world/corridor_without_human.world"/>
     <param name="use_sim_time" value="true" />
 
     <arg name="base"      value="kobuki"/> <!-- create, roomba -->
@@ -20,7 +20,7 @@
     </include>
 
 
-    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find hri_planner)/models/robots/asl_turtlebot.urdf.xacro'" />
+    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find mediax_project)/models/robots/asl_turtlebot.urdf.xacro'" />
     <param name="robot_description" command="$(arg urdf_file)" />
 
     <!-- Gazebo model spawner -->

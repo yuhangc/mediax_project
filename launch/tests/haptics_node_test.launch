@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="hri_planner" type="haptics_usb_node" name="haptics_node" output="screen">
+  <node pkg="mediax_project" type="haptics_usb_node" name="haptics_node" output="screen">
 	<param name="analog_out_channel0" value="1"/>
 	<param name="repetition_repel" value="1"/>
 	<param name="amplitude_repel" value="2.5"/>

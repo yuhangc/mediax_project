@@ -17,10 +17,10 @@
              value="file://$(env HOME)/.ros/camera_info/$(arg camera_serial).yaml" /-->
     </node>
 
-	<node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet camera_nodelet_manager" output="screen">
-	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/logitech_c310_800.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
-	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
+	<node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load mediax_project/TrackerNodelet camera_nodelet_manager" output="screen">
+	  <param name="camera_info_file" value="$(find mediax_project)/camera_calibration/logitech_c310_800.yml"/>
+	  <param name="map_file" value="$(find mediax_project)/maps/marker_maps/exp_test.json"/>
+	  <param name="filter_param_file" value="$(find mediax_project)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="draw_markers" value="$(arg draw_markers)"/>
 	  <param name="filter_mode" value="low_pass"/>
@@ -29,8 +29,8 @@
 	  <remap from="/cam_tracker/inside_out_tracker/pose2d" to="/tracking/human_pose2d"/>
     </node>
 
-	<!--node pkg="hri_planner" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/lab_test.json"/>
+	<!--node pkg="mediax_project" type="tracker_visualization2d.py" name="tracker_visualizer" output="screen">
+	  <param name="map_file" value="$(find mediax_project)/maps/marker_maps/lab_test.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <remap from="/tracking/pose2d" to="/cam_tracker/tracking/pose2d"/>
     </node-->

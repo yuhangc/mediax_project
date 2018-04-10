@@ -1,8 +1,8 @@
 <launch>
   <arg name="use_odom_as_pose"      default="false"/>
 
-  <node pkg="hri_planner" type="exp_control" name="exp_control" output="screen">
-  	<param name="dir_loading_pre_set" value="$(find hri_planner)/protocols"/>
+  <node pkg="mediax_project" type="exp_control" name="exp_control" output="screen">
+  	<param name="dir_loading_pre_set" value="$(find mediax_project)/protocols"/>
 	<param name="dir_saving_pre_set" value="$(env HOME)/Desktop"/>
 	<param name="use_odom_as_pose" value="$(arg use_odom_as_pose)"/>
 	<remap from="/robot_odom" to="/odom"/>

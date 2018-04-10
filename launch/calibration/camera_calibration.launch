@@ -6,7 +6,7 @@
   <arg name="image_path"   default="$(env HOME)/Desktop/camera_calibration/"/>
   <arg name="image_ext"   default=".png"/>
 
-  <node pkg="hri_planner" type="intrinsic_calibration.py" name="camera_calibration" output="screen">
+  <node pkg="mediax_project" type="intrinsic_calibration.py" name="camera_calibration" output="screen">
   	<param name="n_images" value="$(arg n_images)"/>
 	<param name="resolution_x" value="$(arg resolution_x)"/>
 	<param name="resolution_y" value="$(arg resolution_y)"/>

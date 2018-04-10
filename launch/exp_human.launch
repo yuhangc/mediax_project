@@ -1,8 +1,8 @@
 <launch>
   <arg name="map_file" default="exp_test.json" />
 
-  <include file="$(find hri_planner)/launch/tests/human_tracker_test.launch">
+  <include file="$(find mediax_project)/launch/tests/human_tracker_test.launch">
 	<arg name="map_file" value="$(arg map_file)"/>
   </include>
-  <include file="$(find hri_planner)/launch/tests/haptics_node_test.launch"/>
+  <include file="$(find mediax_project)/launch/tests/haptics_node_test.launch"/>
 </launch>

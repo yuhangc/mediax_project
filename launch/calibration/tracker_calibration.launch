@@ -26,10 +26,10 @@
     </node>
   </group>
 
-  <node pkg="hri_planner" type="tracker_calibration" name="camera_calibration" output="screen">
-	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/pointgrey_flea3_half.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/exp_test.json"/>
-	  <param name="filter_param_file" value="$(find hri_planner)/params/inside_out_tracker.json"/>
+  <node pkg="mediax_project" type="tracker_calibration" name="camera_calibration" output="screen">
+	  <param name="camera_info_file" value="$(find mediax_project)/camera_calibration/pointgrey_flea3_half.yml"/>
+	  <param name="map_file" value="$(find mediax_project)/maps/marker_maps/exp_test.json"/>
+	  <param name="filter_param_file" value="$(find mediax_project)/params/inside_out_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="draw_markers" value="true"/>
 	  <param name="filter_mode" value="low_pass"/>

@@ -6,10 +6,10 @@
   <include file="$(find turtlebot_bringup)/launch/3dsensor.launch"/>
   <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
 
-  <node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load hri_planner/TrackerNodelet $(arg camera)/$(arg camera)_nodelet_manager" output="screen">
-	  <param name="camera_info_file" value="$(find hri_planner)/camera_calibration/kinect_rgb.yml"/>
-	  <param name="map_file" value="$(find hri_planner)/maps/marker_maps/$(arg map_file)"/>
-	  <param name="filter_param_file" value="$(find hri_planner)/params/robot_tracker.json"/>
+  <node pkg="nodelet" type="nodelet" name="tracker_nodelet" args="load mediax_project/TrackerNodelet $(arg camera)/$(arg camera)_nodelet_manager" output="screen">
+	  <param name="camera_info_file" value="$(find mediax_project)/camera_calibration/kinect_rgb.yml"/>
+	  <param name="map_file" value="$(find mediax_project)/maps/marker_maps/$(arg map_file)"/>
+	  <param name="filter_param_file" value="$(find mediax_project)/params/robot_tracker.json"/>
 	  <param name="marker_size" value="0.204"/>
 	  <param name="filter_mode" value="kalman"/>
       <param name="odom_source" value="odometer"/>
@@ -23,7 +23,7 @@
 	  <remap from="/$(arg camera)/inside_out_tracker/reset" to="/tracking/reset_robot_tracker"/>
   </node>
 
-  <!--node pkg="hri_planner" type="imu_manager_node" name="imu_manager" output="screen">
+  <!--node pkg="mediax_project" type="imu_manager_node" name="imu_manager" output="screen">
 	<remap from="/imu_data_raw" to="/tracking/imu_data_raw"/>
   </node-->
 </launch>
